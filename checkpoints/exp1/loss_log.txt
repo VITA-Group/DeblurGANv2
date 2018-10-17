@@ -1,0 +1,2 @@
+================ Training Loss (Wed Oct 17 15:45:59 2018) ================
+(epoch: 1, iters: 100, time: 1.545) G_GAN: 9.179 G_L1: 3808.906 D_real+fake: -19.930 

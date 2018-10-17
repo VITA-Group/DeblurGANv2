@@ -23,7 +23,7 @@ Put the weights into
 ```
 To test a model put your blurry images into a folder and run:
 ```bash
-python test.py --dataroot /.path_to_your_data --model test --dataset_mode single --learn_residual
+python3 train.py --dataroot GOPRO_Large --learn_residual --resize_or_crop crop --fineSize 256 --niter 25 --niter_decay 25
 ```
 ## Data
 Download dataset for Object Detection benchmark from [Google Drive](https://drive.google.com/file/d/1CPMBmRj-jBDO2ax4CxkBs9iczIFrs8VA/view?usp=sharing)

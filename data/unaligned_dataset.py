@@ -17,9 +17,10 @@ class UnalignedDataset(BaseDataset):
         # self.dir_B = os.path.join(opt.dataroot, opt.phase, opt.subfolder, 'sharp')
 
         subfolders = os.listdir(os.path.join(opt.dataroot, opt.phase))
+        subfolders_slice = subfolders[:2]
         print(subfolders)
-        self.dirs_A = [os.path.join(opt.dataroot, opt.phase, subfolder, 'blur') for subfolder in subfolders]
-        self.dirs_B = [os.path.join(opt.dataroot, opt.phase, subfolder, 'sharp') for subfolder in subfolders]
+        self.dirs_A = [os.path.join(opt.dataroot, opt.phase, subfolder, 'blur') for subfolder in subfolders_slice]
+        self.dirs_B = [os.path.join(opt.dataroot, opt.phase, subfolder, 'sharp') for subfolder in subfolders_slice]
 
         # self.A_paths = make_dataset(self.dir_A)
         # self.B_paths = make_dataset(self.dir_B)

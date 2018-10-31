@@ -48,6 +48,9 @@ class FPNSeg(nn.Module):
 
         self.final = nn.Conv2d(num_filters // 2, output_ch, kernel_size=3, padding=1)
 
+    def unfreeze(self):
+        self.fpn.unfreeze()
+
     def forward(self, x):
 
         map0, map1, map2, map3, map4 = self.fpn(x)
@@ -64,7 +67,7 @@ class FPNSeg(nn.Module):
 
         final = self.final(smoothed)
 
-        nn.Tanh(final)
+        return nn.Tanh(final)
 
 
 class FPN(nn.Module):
@@ -100,7 +103,12 @@ class FPN(nn.Module):
         self.lateral1 = nn.Conv2d(256, num_filters, kernel_size=1, bias=False)
         self.lateral0 = nn.Conv2d(64, num_filters // 2, kernel_size=1, bias=False)
 
+        for param in self.features.parameters():
+            param.requires_grad = False
 
+    def unfreeze(self):
+        for param in self.features.parameters():
+            param.requires_grad = True
 
     def forward(self, x):
 

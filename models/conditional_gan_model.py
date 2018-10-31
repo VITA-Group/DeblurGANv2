@@ -112,10 +112,11 @@ class ConditionalGAN(BaseModel):
 		self.backward_G()
 		self.optimizer_G.step()
 
-	def get_current_errors(self):
+	def get_current_errors(self, psnr):
 		return OrderedDict([('G_GAN', self.loss_G_GAN.data[0]),
 							('G_L1', self.loss_G_Content.data[0]),
-							('D_real+fake', self.loss_D.data[0])
+							('D_real+fake', self.loss_D.data[0]),
+							('PSNR', psnr)
 							])
 
 	def get_current_visuals(self):

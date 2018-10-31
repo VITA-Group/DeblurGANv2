@@ -42,7 +42,7 @@ def make_dataset_several(dirs):
             for fname in fnames:
                 if is_image_file(fname):
                     path = os.path.join(root, fname)
-                    print(path)
+                    #print(path)
                     images.append(path)
 
     return images

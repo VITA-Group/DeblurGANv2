@@ -6,6 +6,7 @@ from util.visualizer import Visualizer
 from util.metrics import PSNR, SSIM
 
 def train(opt, data_loader, model, visualizer):
+	psnrMetric = 0
 	dataset = data_loader.load_data()
 	dataset_size = len(data_loader)
 	print('#training images = %d' % dataset_size)
@@ -28,7 +29,7 @@ def train(opt, data_loader, model, visualizer):
 				visualizer.display_current_results(results,epoch)
 
 			if total_steps % opt.print_freq == 0:
-				errors = model.get_current_errors()
+				errors = model.get_current_errors(psnr=psnrMetric)
 				t = (time.time() - iter_start_time) / opt.batchSize
 				visualizer.print_current_errors(epoch, epoch_iter, errors, t)
 				if opt.display_id > 0:

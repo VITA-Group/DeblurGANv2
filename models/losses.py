@@ -34,8 +34,9 @@ class PerceptualLoss():
 		return model
 		
 	def initialize(self, loss):
-		self.criterion = loss
-		self.contentFunc = self.contentFunc()
+		with torch.no_grad():
+			self.criterion = loss
+			self.contentFunc = self.contentFunc()
 			
 	def get_loss(self, fakeIm, realIm):
 		f_fake = self.contentFunc.forward(fakeIm)
@@ -59,7 +60,6 @@ class GANLoss(nn.Module):
 			self.loss = nn.BCELoss()
 
 	def get_target_tensor(self, input, target_is_real):
-		target_tensor = None
 		if target_is_real:
 			create_label = ((self.real_label_var is None) or
 							(self.real_label_var.numel() != input.numel()))
@@ -84,9 +84,9 @@ class DiscLoss():
 	def name(self):
 		return 'DiscLoss'
 
-	def initialize(self, opt, tensor):
-		self.criterionGAN = GANLoss(use_l1=False, tensor=tensor)
-		self.fake_AB_pool = ImagePool(opt.pool_size)
+	def __init__(self):
+		self.criterionGAN = GANLoss(use_l1=False)
+		self.fake_AB_pool = ImagePool(50)
 		
 	def get_g_loss(self,net, realA, fakeB):
 		# First, G(A) should fake the discriminator
@@ -112,9 +112,9 @@ class DiscLossLS(DiscLoss):
 	def name(self):
 		return 'DiscLossLS'
 
-	def initialize(self, opt, tensor):
-		DiscLoss.initialize(self, opt, tensor)
-		self.criterionGAN = GANLoss(use_l1=True, tensor=tensor)
+	def __init__(self):
+		super(DiscLossLS, self).__init__()
+		self.criterionGAN = GANLoss(use_l1=True)
 		
 	def get_g_loss(self,net, realA, fakeB):
 		return DiscLoss.get_g_loss(self,net, realA, fakeB)
@@ -126,8 +126,8 @@ class DiscLossWGANGP(DiscLossLS):
 	def name(self):
 		return 'DiscLossWGAN-GP'
 
-	def initialize(self, opt, tensor):
-		DiscLossLS.initialize(self, opt, tensor)
+	def __init__(self):
+		super(DiscLossWGANGP, self).__init__()
 		self.LAMBDA = 10
 		
 	def get_g_loss(self, net, realA, fakeB):
@@ -167,26 +167,23 @@ class DiscLossWGANGP(DiscLossLS):
 		return self.loss_D + gradient_penalty
 
 
-def init_loss(opt, tensor):
-	disc_loss = None
-	content_loss = None
-	
-	if opt.model == 'content_gan':
+def init_loss(model):
+
+	if model['content_loss'] == 'perceptual':
 		content_loss = PerceptualLoss()
 		content_loss.initialize(nn.MSELoss())
-	elif opt.model == 'pix2pix':
+	elif model['content_loss'] == 'l1':
 		content_loss = ContentLoss()
 		content_loss.initialize(nn.L1Loss())
 	else:
-		raise ValueError("Model [%s] not recognized." % opt.model)
-	
-	if opt.gan_type == 'wgan-gp':
+		raise ValueError("ContentLoss [%s] not recognized." % model['content_loss'])
+
+	if model['disc_loss'] == 'wgan-gp':
 		disc_loss = DiscLossWGANGP() 
-	elif opt.gan_type == 'lsgan':
+	elif model['disc_loss'] == 'lsgan':
 		disc_loss = DiscLossLS()
-	elif opt.gan_type == 'gan':
+	elif model['disc_loss'] == 'gan':
 		disc_loss = DiscLoss()
 	else:
-		raise ValueError("GAN [%s] not recognized." % opt.gan_type)
-	disc_loss.initialize(opt, tensor)
+		raise ValueError("GAN Loss [%s] not recognized." % model['disc_loss'])
 	return disc_loss, content_loss

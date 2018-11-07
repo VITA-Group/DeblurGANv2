@@ -6,7 +6,7 @@ from data.data_loader import CreateDataLoader
 import tqdm
 import cv2
 import yaml
-from schedulers import WarmRestart
+from schedulers import WarmRestart, LinearDecay
 import numpy as np
 from models.networks import get_net
 from models.losses import get_loss
@@ -124,6 +124,8 @@ class Trainer(object):
 															 factor=self.config['scheduler']['factor'],
 															 min_lr=self.config['scheduler']['min_lr'])
 		elif self.config['optimizer']['name'] == 'sgdr':
+			scheduler = WarmRestart(self.optimizer)
+		elif self.config['optimizer']['name'] == 'linear':
 			scheduler = WarmRestart(self.optimizer)
 		else:
 			raise ValueError("Scheduler [%s] not recognized." % self.config['scheduler']['name'])

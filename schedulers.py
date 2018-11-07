@@ -33,3 +33,25 @@ class WarmRestart(lr_scheduler.CosineAnnealingLR):
         return [self.eta_min + (base_lr - self.eta_min) * (1 + math.cos(math.pi * self.last_epoch / self.T_max)) / 2 for
                 base_lr in self.base_lrs]
 
+
+class LinearDecay(lr_scheduler._LRScheduler):
+
+    def __init__(self, optimizer, min_lr=0, num_decay=1):
+        """implements Linear Decay
+
+        Parameters:
+        ----------
+        min_lr : int
+            Minimum learning rate
+        num_decay : int
+            Number of epochs for which to decay lr linearly
+
+        """
+        self.min_lr = min_lr
+        self.num_decay = num_decay
+        super().__init__(optimizer)
+
+    def get_lr(self):
+        return [base_lr - self.last_epoch * ((base_lr - self.min_lr) / self.num_decay) for base_lr in self.base_lrs]
+
+

@@ -8,10 +8,11 @@ from PIL import Image
 
 
 class AlignedDataset(BaseDataset):
-    def initialize(self, opt):
-        self.opt = opt
-        self.root = opt.dataroot
-        self.dir_AB = os.path.join(opt.dataroot, opt.phase)
+    def initialize(self, config, filename):
+        self.config = config
+        self.filename = filename
+        self.root = config['dataroot_train']
+        self.dir_AB = os.path.join(self.root, self.config['phase'])
 
         self.AB_paths = sorted(make_dataset(self.dir_AB))
 

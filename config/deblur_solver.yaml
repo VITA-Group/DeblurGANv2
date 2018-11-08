@@ -1,8 +1,9 @@
 ---
 project: deblur_gan
 experiment_desc: default_experiment
-dataroot_train: /home...
-dataroot_val: /home... 
+dataroot_train: /home/ml/DeblurGAN/GOPRO_Large
+dataroot_val: /home...
+phase: train
 warmup_num: 0
 model:
     g_name: resnet
@@ -17,9 +18,10 @@ model:
     norm_layer: instance
     dropout: True  
 num_epochs: 100
-num_workers: 8
-batch_size: 64
+num_workers: 4
+batch_size: 16
 image_size: [256, 256]
+fineSize: 256
 dataset: 
     mode: unaligned
 optimizer: 

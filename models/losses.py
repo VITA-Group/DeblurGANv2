@@ -5,7 +5,6 @@ import functools
 import torch.autograd as autograd
 import numpy as np
 import torchvision.models as models
-import util.util as util
 from util.image_pool import ImagePool
 from torch.autograd import Variable
 ###############################################################################
@@ -18,6 +17,9 @@ class ContentLoss():
 			
 	def get_loss(self, fakeIm, realIm):
 		return self.criterion(fakeIm, realIm)
+
+	def __call__(self, fakeIm, realIm):
+		return self.get_loss(fakeIm, realIm)
 
 class PerceptualLoss():
 	
@@ -44,6 +46,9 @@ class PerceptualLoss():
 		f_real_no_grad = f_real.detach()
 		loss = self.criterion(f_fake, f_real_no_grad)
 		return loss
+
+	def __call__(self, fakeIm, realIm):
+		return self.get_loss(fakeIm, realIm)
 		
 class GANLoss(nn.Module):
 	def __init__(self, use_l1=True, target_real_label=1.0, target_fake_label=0.0,
@@ -80,20 +85,22 @@ class GANLoss(nn.Module):
 		target_tensor = self.get_target_tensor(input, target_is_real)
 		return self.loss(input, target_tensor)
 
-class DiscLoss():
+class DiscLoss(nn.Module):
 	def name(self):
 		return 'DiscLoss'
 
 	def __init__(self):
+		super(DiscLoss, self).__init__()
+
 		self.criterionGAN = GANLoss(use_l1=False)
 		self.fake_AB_pool = ImagePool(50)
 		
-	def get_g_loss(self,net, realA, fakeB):
+	def get_g_loss(self,net, fakeB):
 		# First, G(A) should fake the discriminator
 		pred_fake = net.forward(fakeB)
 		return self.criterionGAN(pred_fake, 1)
 		
-	def get_loss(self, net, realA, fakeB, realB):
+	def get_loss(self, net, fakeB, realB):
 		# Fake
 		# stop backprop to the generator by detaching fake_B
 		# Generated Image Disc Output should be close to zero
@@ -107,6 +114,9 @@ class DiscLoss():
 		# Combined loss
 		self.loss_D = (self.loss_D_fake + self.loss_D_real) * 0.5
 		return self.loss_D
+
+	def __call__(self, net, fakeB, realB):
+		return self.get_loss(net, fakeB, realB)
 		
 class DiscLossLS(DiscLoss):
 	def name(self):
@@ -116,11 +126,11 @@ class DiscLossLS(DiscLoss):
 		super(DiscLossLS, self).__init__()
 		self.criterionGAN = GANLoss(use_l1=True)
 		
-	def get_g_loss(self,net, realA, fakeB):
-		return DiscLoss.get_g_loss(self,net, realA, fakeB)
+	def get_g_loss(self,net, fakeB):
+		return DiscLoss.get_g_loss(self,net, fakeB)
 		
-	def get_loss(self, net, realA, fakeB, realB):
-		return DiscLoss.get_loss(self, net, realA, fakeB, realB)
+	def get_loss(self, net, fakeB, realB):
+		return DiscLoss.get_loss(self, net, fakeB, realB)
 		
 class DiscLossWGANGP(DiscLossLS):
 	def name(self):
@@ -130,7 +140,7 @@ class DiscLossWGANGP(DiscLossLS):
 		super(DiscLossWGANGP, self).__init__()
 		self.LAMBDA = 10
 		
-	def get_g_loss(self, net, realA, fakeB):
+	def get_g_loss(self, net, fakeB):
 		# First, G(A) should fake the discriminator
 		self.D_fake = net.forward(fakeB)
 		return -self.D_fake.mean()
@@ -154,7 +164,7 @@ class DiscLossWGANGP(DiscLossLS):
 		gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * self.LAMBDA
 		return gradient_penalty
 		
-	def get_loss(self, net, realA, fakeB, realB):
+	def get_loss(self, net, fakeB, realB):
 		self.D_fake = net.forward(fakeB.detach())
 		self.D_fake = self.D_fake.mean()
 		
@@ -167,7 +177,7 @@ class DiscLossWGANGP(DiscLossLS):
 		return self.loss_D + gradient_penalty
 
 
-def init_loss(model):
+def get_loss(model):
 
 	if model['content_loss'] == 'perceptual':
 		content_loss = PerceptualLoss()
@@ -179,11 +189,11 @@ def init_loss(model):
 		raise ValueError("ContentLoss [%s] not recognized." % model['content_loss'])
 
 	if model['disc_loss'] == 'wgan-gp':
-		disc_loss = DiscLossWGANGP() 
+		disc_loss = DiscLossWGANGP()
 	elif model['disc_loss'] == 'lsgan':
 		disc_loss = DiscLossLS()
 	elif model['disc_loss'] == 'gan':
 		disc_loss = DiscLoss()
 	else:
 		raise ValueError("GAN Loss [%s] not recognized." % model['disc_loss'])
-	return disc_loss, content_loss
+	return content_loss, disc_loss

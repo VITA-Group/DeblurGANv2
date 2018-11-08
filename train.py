@@ -6,9 +6,9 @@ from data.data_loader import CreateDataLoader
 import tqdm
 import cv2
 import yaml
-from schedulers import WarmRestart, LinearDecay
+from schedulers import WarmRestart
 import numpy as np
-from models.networks import get_net
+from models.networks import get_nets
 from models.losses import get_loss
 from models.models import get_model
 from tensorboardX import SummaryWriter
@@ -23,8 +23,8 @@ cv2.setNumThreads(0)
 class Trainer(object):
 	def __init__(self, config):
 		self.config = config
-		self.train_dataset = self._get_dataset(config, config['datasets']['train'])
-		self.val_dataset = self._get_dataset(config, config['datasets']['validation'])
+		self.train_dataset = self._get_dataset(config, config['dataroot_train'])
+		self.val_dataset = self._get_dataset(config, config['dataroot_val'])
 		self.best_metric = 0
 		self.warmup_epochs = config['warmup_num']
 
@@ -32,7 +32,7 @@ class Trainer(object):
 	def train(self):
 		self._init_params()
 		for epoch in range(0, config['num_epochs']):
-			if epoch == self.warmup_epochs:
+			if (epoch == self.warmup_epochs) and not(self.warmup_epochs == 0):
 				self.netG.module.unfreeze()
 				self.optimizer = self._get_optim()
 				self.scheduler = self._get_scheduler()
@@ -125,14 +125,12 @@ class Trainer(object):
 															 min_lr=self.config['scheduler']['min_lr'])
 		elif self.config['optimizer']['name'] == 'sgdr':
 			scheduler = WarmRestart(self.optimizer)
-		elif self.config['optimizer']['name'] == 'linear':
-			scheduler = WarmRestart(self.optimizer)
 		else:
 			raise ValueError("Scheduler [%s] not recognized." % self.config['scheduler']['name'])
 		return scheduler
 
 	def _init_params(self):
-		self.netG, self.netD = get_net(self.config['model'])
+		self.netG, self.netD = get_nets(self.config['model'])
 		self.netG.cuda()
 		self.netD.cuda()
 		self.model = get_model(self.config['model'])
@@ -142,7 +140,7 @@ class Trainer(object):
 
 
 if __name__ == '__main__':
-	with open('config/gan_solver.yaml', 'r') as f:
+	with open('config/deblur_solver.yaml', 'r') as f:
 		config = yaml.load(f)
 	trainer = Trainer(config)
 	trainer.train()

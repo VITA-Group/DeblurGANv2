@@ -19,7 +19,7 @@ class CustomDatasetDataLoader(BaseDataLoader):
         return 'CustomDatasetDataLoader'
 
     def initialize(self, config, filename):
-        BaseDataLoader.initialize(self, config)
+        BaseDataLoader.initialize(self, config, filename)
         self.dataset = CreateDataset(config, filename)
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,

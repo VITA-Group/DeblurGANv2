@@ -6,10 +6,11 @@ from PIL import Image
 
 
 class SingleDataset(BaseDataset):
-    def initialize(self, opt):
-        self.opt = opt
-        self.root = opt.dataroot
-        self.dir_A = os.path.join(opt.dataroot)
+    def initialize(self, config, filename):
+        self.config = config
+        self.filename = filename
+        self.root = config['dataroot_train']
+        self.dir_A = os.path.join(self.root)
 
         self.A_paths = make_dataset(self.dir_A)
 

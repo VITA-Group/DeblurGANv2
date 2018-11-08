@@ -12,16 +12,17 @@ import random
 import cv2
 
 class UnalignedDataset(BaseDataset):
-    def initialize(self, opt):
-        self.opt = opt
-        self.root = opt.dataroot
+    def initialize(self, config, filename):
+        self.config = config
+        self.filename = filename
+        self.root = config['dataroot_train']
         # self.dir_A = os.path.join(opt.dataroot, opt.phase, opt.subfolder, 'blur')
         # self.dir_B = os.path.join(opt.dataroot, opt.phase, opt.subfolder, 'sharp')
 
-        subfolders = os.listdir(os.path.join(opt.dataroot, opt.phase))
+        subfolders = os.listdir(os.path.join(self.root, self.config['phase']))
         subfolders_slice = subfolders
         #print(subfolders)
-        self.dirs_A = [os.path.join(opt.dataroot, opt.phase, subfolder, 'blur') for subfolder in subfolders_slice]
+        self.dirs_A = [os.path.join(self.root, self.config['phase'], subfolder, 'blur') for subfolder in subfolders_slice]
         #self.dirs_B = [os.path.join(opt.dataroot, opt.phase, subfolder, 'sharp') for subfolder in subfolders_slice]
         #self.dirs_B = [x.split('/')[:-1] for x in self.dirs_A]
 
@@ -66,13 +67,13 @@ class UnalignedDataset(BaseDataset):
         h = A_img.size(1)
         # w = A_img.size[1]
         # h = A_img.size[0]
-        w_offset = random.randint(0, max(0, w - self.opt.fineSize - 1))
-        h_offset = random.randint(0, max(0, h - self.opt.fineSize - 1))
+        w_offset = random.randint(0, max(0, w - self.config['fineSize'] - 1))
+        h_offset = random.randint(0, max(0, h - self.config['fineSize'] - 1))
 
-        A_img = A_img[:, h_offset:h_offset + self.opt.fineSize,
-            w_offset:w_offset + self.opt.fineSize]
-        B_img = B_img[:, h_offset:h_offset + self.opt.fineSize,
-            w_offset:w_offset + self.opt.fineSize]
+        A_img = A_img[:, h_offset:h_offset + self.config['fineSize'],
+            w_offset:w_offset + self.config['fineSize']]
+        B_img = B_img[:, h_offset:h_offset + self.config['fineSize'],
+            w_offset:w_offset + self.config['fineSize']]
 
 
 

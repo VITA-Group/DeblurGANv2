@@ -10,7 +10,7 @@ class BaseDataset(data.Dataset):
     def name(self):
         return 'BaseDataset'
 
-    def initialize(self, opt):
+    def initialize(self, config, filename):
         pass
 
 

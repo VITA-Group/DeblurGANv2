@@ -37,9 +37,9 @@ class UnalignedDataset(BaseDataset):
         self.B_size = len(self.B_paths)
 
         self.transform = Compose([
-            RandomCrop(self.config['fineSize'], self.config['fineSize']),
             HorizontalFlip(),
             Rotate(limit=20, p=0.4),
+            RandomCrop(self.config['fineSize'], self.config['fineSize']),
             Normalize(
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225],

@@ -17,28 +17,18 @@ class UnalignedDataset(BaseDataset):
         self.config = config
         self.filename = filename
         self.root = config['dataroot_train']
-        # self.dir_A = os.path.join(opt.dataroot, opt.phase, opt.subfolder, 'blur')
-        # self.dir_B = os.path.join(opt.dataroot, opt.phase, opt.subfolder, 'sharp')
 
         subfolders = os.listdir(os.path.join(self.root, self.config['phase']))
         subfolders_slice = subfolders
-        #print(subfolders)
         self.dirs_A = [os.path.join(self.root, self.config['phase'], subfolder, 'blur') for subfolder in subfolders_slice]
-        #self.dirs_B = [os.path.join(opt.dataroot, opt.phase, subfolder, 'sharp') for subfolder in subfolders_slice]
-        #self.dirs_B = [x.split('/')[:-1] for x in self.dirs_A]
-
-        # self.A_paths = make_dataset(self.dir_A)
-        # self.B_paths = make_dataset(self.dir_B)
 
         def change_subpath(path, what_to_change, change_to):
             p = pathlib.Path(path)
             index = p.parts.index(what_to_change)
             new_path = (pathlib.Path.cwd().joinpath(*p.parts[:index])).joinpath(pathlib.Path(change_to), *p.parts[index+1:])
-            #print('new path', new_path)
             return new_path
 
         self.A_paths = make_dataset_several(self.dirs_A)
-        #self.B_paths = make_dataset_several(self.dirs_B)
         self.B_paths = [str(change_subpath(x, 'blur', 'sharp')) for x in self.A_paths]
 
         self.A_paths = sorted(self.A_paths)
@@ -71,8 +61,7 @@ class UnalignedDataset(BaseDataset):
         A = torch.from_numpy(np.transpose(A_img, (2, 0, 1)).astype('float32'))
         B = torch.from_numpy(np.transpose(B_img, (2, 0, 1)).astype('float32'))
 
-        return {'A': A, 'B': B,
-                'A_paths': A_path, 'B_paths': B_path}
+        return {'A': A, 'B': B}
 
     def __len__(self):
         return max(self.A_size, self.B_size)

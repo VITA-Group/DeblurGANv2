@@ -10,6 +10,7 @@ import PIL
 from pdb import set_trace as st
 import random
 import cv2
+from albumentations import Compose, Rotate, Normalize, HorizontalFlip, RandomCrop
 
 class UnalignedDataset(BaseDataset):
     def initialize(self, config, filename):
@@ -44,41 +45,33 @@ class UnalignedDataset(BaseDataset):
         self.B_paths = sorted(self.B_paths)
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
-        #self.transform = get_transform(opt)
-        transform_list = [transforms.ToTensor(),
-                          transforms.Normalize((0.5, 0.5, 0.5),
-                                               (0.5, 0.5, 0.5))]
 
-        self.transform = transforms.Compose(transform_list)
+        self.transform = Compose([
+            RandomCrop(self.config['fineSize'], self.config['fineSize']),
+            HorizontalFlip(),
+            Rotate(limit=20, p=0.4),
+            Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225],
+            )
+                                  ])
 
     def __getitem__(self, index):
         A_path = self.A_paths[index % self.A_size]
-        index_A = index % self.A_size
         B_path = self.B_paths[index % self.A_size]
-        # print('(A, B) = (%d, %d)' % (index_A, index_B))
-        A_img = Image.open(A_path).convert('RGB')
-        B_img = Image.open(B_path).convert('RGB')
+        A_img = cv2.imread(A_path)
+        A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
+        B_img = cv2.imread(B_path)
+        B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
+        augmented = self.transform(image=A_img, image2=B_img)
 
-        A_img = self.transform(A_img)
-        B_img = self.transform(B_img)
+        A_img = augmented['image']
+        B_img = augmented['image2']
 
-        #print(A_img.size)
-        w = A_img.size(2)
-        h = A_img.size(1)
-        # w = A_img.size[1]
-        # h = A_img.size[0]
-        w_offset = random.randint(0, max(0, w - self.config['fineSize'] - 1))
-        h_offset = random.randint(0, max(0, h - self.config['fineSize'] - 1))
+        A = torch.from_numpy(np.transpose(A_img, (2, 0, 1)).astype('float32'))
+        B = torch.from_numpy(np.transpose(B_img, (2, 0, 1)).astype('float32'))
 
-        A_img = A_img[:, h_offset:h_offset + self.config['fineSize'],
-            w_offset:w_offset + self.config['fineSize']]
-        B_img = B_img[:, h_offset:h_offset + self.config['fineSize'],
-            w_offset:w_offset + self.config['fineSize']]
-
-
-
-
-        return {'A': A_img, 'B': B_img,
+        return {'A': A, 'B': B,
                 'A_paths': A_path, 'B_paths': B_path}
 
     def __len__(self):

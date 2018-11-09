@@ -39,12 +39,17 @@ class UnalignedDataset(BaseDataset):
         self.transform = Compose([
             HorizontalFlip(),
             Rotate(limit=20, p=0.4),
-            RandomCrop(self.config['fineSize'], self.config['fineSize']),
-            Normalize(
+            RandomCrop(self.config['fineSize'], self.config['fineSize'])
+                                  ])
+        self.input_norm = Compose([Normalize(
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225],
-            )
-                                  ])
+            )])
+
+        self.output_norm = Compose([Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5],
+        )])
 
     def __getitem__(self, index):
         A_path = self.A_paths[index % self.A_size]
@@ -55,8 +60,8 @@ class UnalignedDataset(BaseDataset):
         B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
         augmented = self.transform(image=A_img, image2=B_img)
 
-        A_img = augmented['image']
-        B_img = augmented['image2']
+        A_img = self.input_norm(image=augmented['image'])['image']
+        B_img = self.output_norm(image=augmented['image2'])['image']
 
         A = torch.from_numpy(np.transpose(A_img, (2, 0, 1)).astype('float32'))
         B = torch.from_numpy(np.transpose(B_img, (2, 0, 1)).astype('float32'))

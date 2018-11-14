@@ -34,13 +34,15 @@ class PerceptualLoss():
 			if i == conv_3_3_layer:
 				break
 		return model
-		
+
 	def initialize(self, loss):
 		with torch.no_grad():
 			self.criterion = loss
 			self.contentFunc = self.contentFunc()
 			
 	def get_loss(self, fakeIm, realIm):
+		# print()
+		# print(fakeIm.size(), realIm.size())
 		f_fake = self.contentFunc.forward(fakeIm)
 		f_real = self.contentFunc.forward(realIm)
 		f_real_no_grad = f_real.detach()

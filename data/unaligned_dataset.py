@@ -1,7 +1,8 @@
 import os
 import os.path
 import pathlib
-
+import torch
+import numpy as np
 import torchvision.transforms as transforms
 from data.base_dataset import BaseDataset, get_transform
 from data.image_folder import make_dataset, make_dataset_several
@@ -58,10 +59,10 @@ class UnalignedDataset(BaseDataset):
         A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
         B_img = cv2.imread(B_path)
         B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
-        augmented = self.transform(image=A_img, image2=B_img)
+        augmented = self.transform(image=A_img, mask=B_img)
 
         A_img = self.input_norm(image=augmented['image'])['image']
-        B_img = self.output_norm(image=augmented['image2'])['image']
+        B_img = self.output_norm(image=augmented['mask'])['image']
 
         A = torch.from_numpy(np.transpose(A_img, (2, 0, 1)).astype('float32'))
         B = torch.from_numpy(np.transpose(B_img, (2, 0, 1)).astype('float32'))

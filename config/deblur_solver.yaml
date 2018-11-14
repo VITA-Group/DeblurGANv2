@@ -2,7 +2,7 @@
 project: deblur_gan
 experiment_desc: default_experiment
 dataroot_train: /home/ml/DeblurGAN/GOPRO_Large
-dataroot_val: /home...
+dataroot_val: /home/ml/DeblurGAN/GOPRO_Large
 phase: train
 warmup_num: 0
 model:
@@ -18,8 +18,8 @@ model:
     norm_layer: instance
     dropout: True  
 num_epochs: 100
-num_workers: 4
-batch_size: 16
+num_workers: 2
+batch_size: 8
 image_size: [256, 256]
 fineSize: 256
 dataset: 

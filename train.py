@@ -14,7 +14,7 @@ from models.models import get_model
 from tensorboardX import SummaryWriter
 import logging
 
-logging.basicConfig(filename='train.log',level=logging.DEBUG)
+logging.basicConfig(filename='baseline.log',level=logging.DEBUG)
 writer = SummaryWriter('runs')
 REPORT_EACH = 8
 torch.backends.cudnn.bencmark = True
@@ -34,12 +34,12 @@ class Trainer(object):
 		for epoch in range(0, config['num_epochs']):
 			if (epoch == self.warmup_epochs) and not(self.warmup_epochs == 0):
 				self.netG.module.unfreeze()
-				self.optimizer = self._get_optim()
-				self.scheduler = self._get_scheduler()
+				self.optimizer_G = self._get_optim(self.netG)
+				self.scheduler_G = self._get_scheduler(self.netG)
 
 			train_loss = self._run_epoch(epoch)
 			val_loss, val_metric = self._validate(epoch)
-			self.scheduler.step(val_loss)
+			self.scheduler_G.step(val_loss)
 
 			if val_metric > self.best_metric:
 				self.best_metric = val_metric
@@ -54,34 +54,39 @@ class Trainer(object):
 				self.config['experiment_desc'], epoch, train_loss, val_loss, val_metric, self.best_metric))
 
 	def _run_epoch(self, epoch):
-		losses = []
+		losses_G = []
+		losses_D = []
 		accuracy = []
 		batches_per_epoch = len(self.train_dataset) / config['batch_size']
 
-		for param_group in self.optimizer.param_groups:
+		for param_group in self.optimizer_G.param_groups:
 			lr = param_group['lr']
 		tq = tqdm.tqdm(self.train_dataset)
 		tq.set_description('Epoch {}, lr {}'.format(epoch, lr))
 		i = 0
 		for data in tq:
 			inputs, targets = self.model.get_input(data)
-			self.optimizer.zero_grad()
+			self.optimizer_G.zero_grad()
 			outputs = self.netG(inputs)
-			loss = self.criterionG(outputs, targets)
-			loss.backward()
-			self.optimizer.step()
-			losses.append(loss.data[0])
+			loss_G = self.criterionG(outputs, targets)
+			loss_D = self.criterionD(self.netD, outputs, targets)
+			loss_G.backward()
+			loss_D.backward(retain_graph=True)
+			self.optimizer_G.step()
+			self.optimizer_D.step()
+			losses_G.append(loss_G.item())
+			losses_D.append(loss_D.item())
 			accuracy.append(self.model.get_acc(outputs, targets))
-			mean_loss = np.mean(losses[-REPORT_EACH:])
+			mean_loss = np.mean(losses_G[-REPORT_EACH:])
 			mean_acc = np.mean(accuracy[-REPORT_EACH:])
 			if i % 100 == 0:
-				writer.add_scalar('Train_Loss', mean_loss, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_G_Loss', mean_loss, i + (batches_per_epoch * epoch))
 				writer.add_scalar('Train_Metric', mean_acc, i + (batches_per_epoch * epoch))
 				self.model.visualize_data(writer, data, outputs,  i + (batches_per_epoch * epoch))
 			tq.set_postfix(loss=self.model.get_loss(mean_loss, mean_acc, outputs, targets))
 			i += 1
 		tq.close()
-		return np.mean(losses)
+		return np.mean(losses_G)
 
 	def _validate(self, epoch):
 		losses = []
@@ -105,26 +110,26 @@ class Trainer(object):
 		data_loader = CreateDataLoader(config, filename)
 		return data_loader.load_data()
 
-	def _get_optim(self):
+	def _get_optim(self, model):
 		if self.config['optimizer']['name'] == 'adam':
-			optimizer = optim.Adam(filter(lambda p: p.requires_grad, self.netG.parameters()), lr=self.config['optimizer']['lr'])
+			optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=self.config['optimizer']['lr'])
 		elif self.config['optimizer']['name'] == 'sgd':
-			optimizer = optim.SGD(filter(lambda p: p.requires_grad, self.netG.parameters()), lr=self.config['optimizer']['lr'])
+			optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=self.config['optimizer']['lr'])
 		elif self.config['optimizer']['name'] == 'adadelta':
-			optimizer = optim.Adadelta(filter(lambda p: p.requires_grad, self.netG.parameters()), lr=self.config['optimizer']['lr'])
+			optimizer = optim.Adadelta(filter(lambda p: p.requires_grad, model.parameters()), lr=self.config['optimizer']['lr'])
 		else:
 			raise ValueError("Optimizer [%s] not recognized." % self.config['optimizer']['name'])
 		return optimizer
 
-	def _get_scheduler(self):
+	def _get_scheduler(self, optimizer):
 		if self.config['scheduler']['name'] == 'plateau':
-			scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,
+			scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,
 															 mode='min',
 															 patience=self.config['scheduler']['patience'],
 															 factor=self.config['scheduler']['factor'],
 															 min_lr=self.config['scheduler']['min_lr'])
 		elif self.config['optimizer']['name'] == 'sgdr':
-			scheduler = WarmRestart(self.optimizer)
+			scheduler = WarmRestart(optimizer)
 		else:
 			raise ValueError("Scheduler [%s] not recognized." % self.config['scheduler']['name'])
 		return scheduler
@@ -135,8 +140,10 @@ class Trainer(object):
 		self.netD.cuda()
 		self.model = get_model(self.config['model'])
 		self.criterionG, self.criterionD = get_loss(self.config['model'])
-		self.optimizer = self._get_optim()
-		self.scheduler = self._get_scheduler()
+		self.optimizer_G = self._get_optim(self.netG)
+		self.optimizer_D = self._get_optim(self.netD)
+		self.scheduler_G = self._get_scheduler(self.optimizer_G)
+		self.scheduler_D = self._get_scheduler(self.optimizer_D)
 
 
 if __name__ == '__main__':

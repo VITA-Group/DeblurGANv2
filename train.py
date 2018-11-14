@@ -97,7 +97,7 @@ class Trainer(object):
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
 			loss = self.criterionG(outputs, targets)
-			losses.append(loss.data[0])
+			losses.append(loss.item())
 			accuracy.append(self.model.get_acc(outputs, targets))
 		val_loss = np.mean(losses)
 		val_acc = np.mean(accuracy)

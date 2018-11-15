@@ -74,7 +74,7 @@ class Trainer(object):
 			loss_D = self.criterionD(self.netD, outputs, targets)
 			loss_content = self.criterionG(outputs, targets)
 			loss_adv = self.criterionD.get_g_loss(self.netD, outputs)
-			loss_G = loss_content + loss_adv
+			loss_G = loss_content + 0.01 * loss_adv
 			loss_G.backward()
 			loss_D.backward(retain_graph=True)
 			self.optimizer_G.step()
@@ -110,7 +110,7 @@ class Trainer(object):
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
 			loss_content = self.criterionG(outputs, targets)
-			loss_G = loss_content + self.criterionD.get_g_loss(self.netD, outputs)
+			loss_G = loss_content + 0.01 * self.criterionD.get_g_loss(self.netD, outputs)
 			losses.append(loss_G.item())
 			curr_psnr = self.model.get_acc(outputs, targets)
 			psnrs.append(curr_psnr)

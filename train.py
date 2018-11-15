@@ -23,8 +23,8 @@ cv2.setNumThreads(0)
 class Trainer(object):
 	def __init__(self, config):
 		self.config = config
-		self.train_dataset = self._get_dataset(config, config['dataroot_train'])
-		self.val_dataset = self._get_dataset(config, config['dataroot_val'])
+		self.train_dataset = self._get_dataset(config, 'train')
+		self.val_dataset = self._get_dataset(config, 'test')
 		self.best_metric = 0
 		self.warmup_epochs = config['warmup_num']
 

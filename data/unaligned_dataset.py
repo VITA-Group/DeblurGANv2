@@ -19,9 +19,9 @@ class UnalignedDataset(BaseDataset):
         self.filename = filename
         self.root = config['dataroot_train']
 
-        subfolders = os.listdir(os.path.join(self.root, self.config['phase']))
+        subfolders = os.listdir(os.path.join(self.root, filename))
         subfolders_slice = subfolders
-        self.dirs_A = [os.path.join(self.root, self.config['phase'], subfolder, 'blur') for subfolder in subfolders_slice]
+        self.dirs_A = [os.path.join(self.root, filename, subfolder, 'blur') for subfolder in subfolders_slice]
 
         def change_subpath(path, what_to_change, change_to):
             p = pathlib.Path(path)

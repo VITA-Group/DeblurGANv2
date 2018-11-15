@@ -21,9 +21,10 @@ class CustomDatasetDataLoader(BaseDataLoader):
     def initialize(self, config, filename):
         BaseDataLoader.initialize(self, config, filename)
         self.dataset = CreateDataset(config, filename)
+        batchSize = 1 if filename == 'test' else config['batch_size']
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
-            batch_size=config['batch_size'],
+            batch_size=batchSize,
             shuffle=True,
             num_workers=int(config['num_workers']),
             drop_last=True)

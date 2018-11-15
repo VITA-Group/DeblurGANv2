@@ -64,7 +64,7 @@ class Trainer(object):
 
 		for param_group in self.optimizer_G.param_groups:
 			lr = param_group['lr']
-		tq = tqdm.tqdm(self.train_dataset)
+		tq = tqdm.tqdm(self.train_dataset.dataloader)
 		tq.set_description('Epoch {}, lr {}'.format(epoch, lr))
 		i = 0
 		for data in tq:
@@ -104,7 +104,7 @@ class Trainer(object):
 	def _validate(self, epoch):
 		losses = []
 		psnrs = []
-		tq = tqdm.tqdm(self.val_dataset)
+		tq = tqdm.tqdm(self.val_dataset.dataloader)
 		tq.set_description('Validation')
 		for data in tq:
 			inputs, targets = self.model.get_input(data)

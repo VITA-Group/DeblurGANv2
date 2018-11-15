@@ -43,7 +43,7 @@ def SSIM(img1, img2):
 	return ssim_map.mean()
 	
 def PSNR(img1, img2):
-	mse = np.mean( (img1.cpu().detach().numpy()/255. - img2.cpu().detach().numpy()/255.) ** 2 )
+	mse = np.mean( (img1/255. - img2/255.) ** 2 )
 	if mse == 0:
 		return 100
 	PIXEL_MAX = 1

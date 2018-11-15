@@ -17,7 +17,7 @@ model:
     pretrained: False
     norm_layer: instance
     dropout: True  
-num_epochs: 100
+num_epochs: 60
 num_workers: 2
 batch_size: 8
 image_size: [256, 256]

@@ -15,7 +15,7 @@ from tensorboardX import SummaryWriter
 import logging
 
 logging.basicConfig(filename='baseline.log',level=logging.DEBUG)
-writer = SummaryWriter('runs')
+writer = SummaryWriter('baseline_runs')
 REPORT_EACH = 8
 torch.backends.cudnn.bencmark = True
 cv2.setNumThreads(0)
@@ -38,8 +38,10 @@ class Trainer(object):
 				self.scheduler_G = self._get_scheduler(self.netG)
 
 			train_loss = self._run_epoch(epoch)
-			val_loss, val_metric = self._validate(epoch)
+			val_loss, val_psnr = self._validate(epoch)
 			self.scheduler_G.step(val_loss)
+
+			val_metric = val_psnr
 
 			if val_metric > self.best_metric:
 				self.best_metric = val_metric
@@ -55,8 +57,9 @@ class Trainer(object):
 
 	def _run_epoch(self, epoch):
 		losses_G = []
-		losses_D = []
-		accuracy = []
+		losses_vgg = []
+		losses_adv = []
+		psnrs = []
 		batches_per_epoch = len(self.train_dataset) / config['batch_size']
 
 		for param_group in self.optimizer_G.param_groups:
@@ -68,43 +71,57 @@ class Trainer(object):
 			inputs, targets = self.model.get_input(data)
 			self.optimizer_G.zero_grad()
 			outputs = self.netG(inputs)
-			loss_G = self.criterionG(outputs, targets)
 			loss_D = self.criterionD(self.netD, outputs, targets)
+			loss_content = self.criterionG(outputs, targets)
+			loss_adv = self.criterionD.get_g_loss(self.netD, outputs)
+			loss_G = loss_content + loss_adv
 			loss_G.backward()
 			loss_D.backward(retain_graph=True)
 			self.optimizer_G.step()
 			self.optimizer_D.step()
 			losses_G.append(loss_G.item())
-			losses_D.append(loss_D.item())
-			accuracy.append(self.model.get_acc(outputs, targets))
-			mean_loss = np.mean(losses_G[-REPORT_EACH:])
-			mean_acc = np.mean(accuracy[-REPORT_EACH:])
+			losses_vgg.append(loss_content.item())
+			losses_adv.append(loss_adv.item())
+			curr_psnr = self.model.get_acc(outputs, targets)
+			psnrs.append(curr_psnr)
+			mean_loss_G = np.mean(losses_G[-REPORT_EACH:])
+			mean_loss_vgg = np.mean(losses_vgg[-REPORT_EACH:])
+			mean_loss_adv = np.mean(losses_adv[-REPORT_EACH:])
+			mean_psnr = np.mean(psnrs[-REPORT_EACH:])
 			if i % 100 == 0:
-				writer.add_scalar('Train_G_Loss', mean_loss, i + (batches_per_epoch * epoch))
-				writer.add_scalar('Train_Metric', mean_acc, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_G_Loss', mean_loss_G, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_G_Loss_vgg', mean_loss_vgg, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_G_Loss_adv', mean_loss_adv, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_PSNR', mean_psnr, i + (batches_per_epoch * epoch))
+				writer.add_image('output', outputs)
+				writer.add_image('target', targets)
 				self.model.visualize_data(writer, data, outputs,  i + (batches_per_epoch * epoch))
-			tq.set_postfix(loss=self.model.get_loss(mean_loss, mean_acc, outputs, targets))
+			tq.set_postfix(loss=self.model.get_loss(mean_loss_G, mean_psnr, outputs, targets))
 			i += 1
 		tq.close()
 		return np.mean(losses_G)
 
 	def _validate(self, epoch):
 		losses = []
-		accuracy = []
+		psnrs = []
 		tq = tqdm.tqdm(self.val_dataset)
 		tq.set_description('Validation')
 		for data in tq:
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
-			loss = self.criterionG(outputs, targets)
-			losses.append(loss.item())
-			accuracy.append(self.model.get_acc(outputs, targets))
+			loss_content = self.criterionG(outputs, targets)
+			loss_G = loss_content + self.criterionD.get_g_loss(self.netD, outputs)
+			losses.append(loss_G.item())
+			curr_psnr = self.model.get_acc(outputs, targets)
+			psnrs.append(curr_psnr)
 		val_loss = np.mean(losses)
-		val_acc = np.mean(accuracy)
+		val_psnr = np.mean(psnrs)
 		tq.close()
 		writer.add_scalar('Validation_Loss', val_loss, epoch)
-		writer.add_scalar('Validation_Metric', val_acc, epoch)
-		return val_loss, val_acc
+		writer.add_scalar('Validation_PSNR', val_psnr, epoch)
+		writer.add_image('output', outputs)
+		writer.add_image('target', targets)
+		return val_loss, val_psnr
 
 	def _get_dataset(self, config, filename):
 		data_loader = CreateDataLoader(config, filename)

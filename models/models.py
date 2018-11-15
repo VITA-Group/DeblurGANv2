@@ -8,7 +8,6 @@ import torchvision.transforms as transforms
 import numpy as np
 from util.metrics import PSNR, SSIM
 import pytorch_ssim
-from util.pyssim import ssim
 from PIL import Image
 
 class DeblurModel(nn.Module):
@@ -23,9 +22,14 @@ class DeblurModel(nn.Module):
         inputs, targets = Variable(inputs), Variable(targets)
         return inputs, targets
 
+    def tensor2im(self, image_tensor, imtype=np.uint8):
+        image_numpy = image_tensor[0].cpu().float().numpy()
+        image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+        return image_numpy.astype(imtype)
+
     def get_acc(self, output, target):
 
-        psnr = PSNR(output, target)
+        psnr = PSNR(self.tensor2im(output.data), self.tensor2im(target.data))
 
         return psnr
 

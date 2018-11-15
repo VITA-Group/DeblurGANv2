@@ -6,7 +6,10 @@ from torch.autograd import Variable
 import torchvision.utils as vutils
 import torchvision.transforms as transforms
 import numpy as np
-
+from util.metrics import PSNR, SSIM
+import pytorch_ssim
+from util.pyssim import ssim
+from PIL import Image
 
 class DeblurModel(nn.Module):
     def __init__(self):
@@ -20,11 +23,14 @@ class DeblurModel(nn.Module):
         inputs, targets = Variable(inputs), Variable(targets)
         return inputs, targets
 
-    def get_acc(self, output=None, target=None):
-        return 0
+    def get_acc(self, output, target):
 
-    def get_loss(self, mean_loss, mean_acc, output=None, target=None):
-        return '{:.3f}; accuracy={}'.format(mean_loss, mean_acc)
+        psnr = PSNR(output, target)
+
+        return psnr
+
+    def get_loss(self, mean_loss, mean_psnr, output=None, target=None):
+        return '{:.3f}; psnr={}'.format(mean_loss, mean_psnr)
 
     def visualize_data(self, writer, data, outputs, niter):
         inv_normalize = transforms.Normalize(

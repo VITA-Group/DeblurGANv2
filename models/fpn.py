@@ -4,7 +4,7 @@ import torch.nn as nn
 from torchvision.models import resnet50, densenet121, densenet201
 
 
-class FPNSegHead(nn.Module):
+class FPNHead(nn.Module):
     def __init__(self, num_in, num_mid, num_out):
         super().__init__()
 
@@ -17,7 +17,7 @@ class FPNSegHead(nn.Module):
         return x
 
 
-class FPNSeg(nn.Module):
+class FPNNet(nn.Module):
 
     def __init__(self, output_ch=3, num_filters=128, num_filters_fpn=256, pretrained=True):
         super().__init__()
@@ -29,10 +29,10 @@ class FPNSeg(nn.Module):
 
         # The segmentation heads on top of the FPN
 
-        self.head1 = FPNSegHead(num_filters_fpn, num_filters, num_filters)
-        self.head2 = FPNSegHead(num_filters_fpn, num_filters, num_filters)
-        self.head3 = FPNSegHead(num_filters_fpn, num_filters, num_filters)
-        self.head4 = FPNSegHead(num_filters_fpn, num_filters, num_filters)
+        self.head1 = FPNHead(num_filters_fpn, num_filters, num_filters)
+        self.head2 = FPNHead(num_filters_fpn, num_filters, num_filters)
+        self.head3 = FPNHead(num_filters_fpn, num_filters, num_filters)
+        self.head4 = FPNHead(num_filters_fpn, num_filters, num_filters)
 
         self.smooth = nn.Sequential(
             nn.Conv2d(4 * num_filters, num_filters, kernel_size=3, padding=1),
@@ -67,7 +67,7 @@ class FPNSeg(nn.Module):
 
         final = self.final(smoothed)
 
-        return nn.Tanh(final)
+        return torch.tanh(final)
 
 
 class FPN(nn.Module):

@@ -4,7 +4,7 @@ from torch.nn import init
 import functools
 from torch.autograd import Variable
 import numpy as np
-from models.fpn import FPNSeg
+from models.fpn import FPNNet
 ###############################################################################
 # Functions
 ###############################################################################
@@ -182,7 +182,7 @@ def get_nets(model_config):
                                   n_blocks=model_config['blocks'],
                                   learn_residual=model_config['learn_residual'])
     elif generator_name == 'fpn':
-        model_g = FPNSeg()
+        model_g = FPNNet()
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
 

@@ -35,7 +35,7 @@ class Trainer(object):
 			if (epoch == self.warmup_epochs) and not(self.warmup_epochs == 0):
 				self.netG.module.unfreeze()
 				self.optimizer_G = self._get_optim(self.netG)
-				self.scheduler_G = self._get_scheduler(self.netG)
+				self.scheduler_G = self._get_scheduler(self.optimizer_G)
 
 			train_loss = self._run_epoch(epoch)
 			val_loss, val_psnr = self._validate(epoch)

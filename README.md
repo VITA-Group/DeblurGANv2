@@ -1,4 +1,4 @@
-# RestoreGANGAN
+# RestoreGAN
 
 ## This repostory is under active development
 

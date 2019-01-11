@@ -5,6 +5,9 @@ import functools
 from torch.autograd import Variable
 import numpy as np
 from models.fpn import FPNNet
+from models.fpn_inception import FPNInception
+from models.unet_seresnext import UNetSEResNext
+from models.fpn_densenet import FPNDense
 ###############################################################################
 # Functions
 ###############################################################################
@@ -29,7 +32,7 @@ def get_norm_layer(norm_type='instance'):
 # Code and idea originally from Justin Johnson's architecture.
 # https://github.com/jcjohnson/fast-neural-style/
 class ResnetGenerator(nn.Module):
-    def __init__(self, input_nc=3, output_nc=3, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, use_parallel = True, learn_residual = False, padding_type='reflect'):
+    def __init__(self, input_nc=3, output_nc=3, ngf=64, norm_layer=nn.BatchNorm2d, use_dropout=False, n_blocks=6, use_parallel=True, learn_residual=True, padding_type='reflect'):
         assert(n_blocks >= 0)
         super(ResnetGenerator, self).__init__()
         self.input_nc = input_nc
@@ -182,7 +185,15 @@ def get_nets(model_config):
                                   n_blocks=model_config['blocks'],
                                   learn_residual=model_config['learn_residual'])
     elif generator_name == 'fpn':
-        model_g = FPNNet()
+        model_g = FPNNet(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
+                         pretrained=model_config['pretrained'])
+    elif generator_name == 'fpn_inception':
+        model_g = FPNInception(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
+    elif generator_name == 'fpn_dense':
+        model_g = FPNDense()
+    elif generator_name == 'unet_seresnext':
+        model_g = UNetSEResNext(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
+                                pretrained=model_config['pretrained'])
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
 

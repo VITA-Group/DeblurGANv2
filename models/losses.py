@@ -29,6 +29,7 @@ class PerceptualLoss():
 		cnn = cnn.cuda()
 		model = nn.Sequential()
 		model = model.cuda()
+		model = model.eval()
 		for i,layer in enumerate(list(cnn)):
 			model.add_module(str(i),layer)
 			if i == conv_3_3_layer:
@@ -46,8 +47,8 @@ class PerceptualLoss():
 		f_fake = self.contentFunc.forward(fakeIm)
 		f_real = self.contentFunc.forward(realIm)
 		f_real_no_grad = f_real.detach()
-		loss = self.criterion(f_fake, f_real_no_grad)
-		return loss
+		loss = self.criterion(f_fake, f_real_no_grad) + 0.5 * nn.L1Loss()(fakeIm, realIm)
+		return torch.mean(loss)
 
 	def __call__(self, fakeIm, realIm):
 		return self.get_loss(fakeIm, realIm)

@@ -61,7 +61,7 @@ class UnalignedDataset(BaseDataset):
         B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
         augmented = self.transform(image=A_img, mask=B_img)
 
-        A_img = self.input_norm(image=augmented['image'])['image']
+        A_img = self.output_norm(image=augmented['image'])['image']
         B_img = self.output_norm(image=augmented['mask'])['image']
 
         A = torch.from_numpy(np.transpose(A_img, (2, 0, 1)).astype('float32'))

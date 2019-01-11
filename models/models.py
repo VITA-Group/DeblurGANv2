@@ -6,9 +6,11 @@ from torch.autograd import Variable
 import torchvision.utils as vutils
 import torchvision.transforms as transforms
 import numpy as np
-from util.metrics import PSNR, SSIM
-import pytorch_ssim
+from util.metrics import PSNR
+from skimage.measure import compare_ssim as SSIM
 from PIL import Image
+import cv2
+import os
 
 class DeblurModel(nn.Module):
     def __init__(self):
@@ -27,22 +29,16 @@ class DeblurModel(nn.Module):
         image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
         return image_numpy.astype(imtype)
 
-    def get_acc(self, output, target):
+    def get_acc(self, output, target, full=False):
+        fake = self.tensor2im(output.data)
+        real = self.tensor2im(target.data)
+        psnr = PSNR(fake, real)
+        ssim = SSIM(fake, real, multichannel=True)
 
-        psnr = PSNR(self.tensor2im(output.data), self.tensor2im(target.data))
+        return psnr, ssim
 
-        return psnr
-
-    def get_loss(self, mean_loss, mean_psnr, output=None, target=None):
-        return '{:.3f}; psnr={}'.format(mean_loss, mean_psnr)
-
-    def visualize_data(self, writer, data, outputs, niter):
-        inv_normalize = transforms.Normalize(
-            mean=[-0.485 / 0.229, -0.456 / 0.224, -0.406 / 0.255],
-            std=[1 / 0.229, 1 / 0.224, 1 / 0.255]
-        )
-        images = inv_normalize(vutils.make_grid(data['A']))
-        writer.add_image('Images', images, niter)
+    def get_loss(self, mean_loss, mean_psnr, mean_ssim, output=None, target=None):
+        return '{:.3f}; psnr={}; ssim={}'.format(mean_loss, mean_psnr, mean_ssim)
 
 
 def get_model(model_config):

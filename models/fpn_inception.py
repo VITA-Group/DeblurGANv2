@@ -16,18 +16,6 @@ class FPNHead(nn.Module):
         x = nn.functional.relu(self.block1(x), inplace=True)
         return x
 
-class ConvBlock(nn.Module):
-    def __init__(self, num_in, num_out, norm_layer):
-        super().__init__()
-
-        self.block = nn.Sequential(nn.Conv2d(num_in, num_out, kernel_size=3, padding=1),
-                                 norm_layer(num_out),
-                                 nn.ReLU(inplace=True))
-
-    def forward(self, x):
-        x = self.block(x)
-        return x
-
 
 class FPNInception(nn.Module):
 
@@ -36,7 +24,7 @@ class FPNInception(nn.Module):
 
         # Feature Pyramid Network (FPN) with four feature maps of resolutions
         # 1/4, 1/8, 1/16, 1/32 and `num_filters` filters for all feature maps.
-        self.fpn = FPN(num_filters=num_filters_fpn, norm_layer=norm_layer)
+        self.fpn = FPN(num_filters=num_filters_fpn)
 
         # The segmentation heads on top of the FPN
 
@@ -59,10 +47,13 @@ class FPNInception(nn.Module):
 
         self.final = nn.Conv2d(num_filters // 2, output_ch, kernel_size=3, padding=1)
 
+        #self.resnet = resnet
+
     def unfreeze(self):
         self.fpn.unfreeze()
 
     def forward(self, x):
+
         map0, map1, map2, map3, map4 = self.fpn(x)
 
         map4 = nn.functional.upsample(self.head4(map4), scale_factor=8, mode="nearest")
@@ -83,7 +74,7 @@ class FPNInception(nn.Module):
 
 class FPN(nn.Module):
 
-    def __init__(self, norm_layer, num_filters=256):
+    def __init__(self, num_filters=256):
         """Creates an `FPN` instance for feature extraction.
         Args:
           num_filters: the number of filters in each output pyramid level
@@ -113,15 +104,6 @@ class FPN(nn.Module):
             self.inception.repeat_1,
             self.inception.mixed_7a,
         ) #2080
-        self.td1 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
-        self.td2 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
-        self.td3 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
         self.pad = nn.ReflectionPad2d(1)
         self.lateral4 = nn.Conv2d(2080, num_filters, kernel_size=1, bias=False)
         self.lateral3 = nn.Conv2d(1088, num_filters, kernel_size=1, bias=False)
@@ -161,7 +143,7 @@ class FPN(nn.Module):
         pad = (1, 2, 1, 2)  # pad last dim by 1 on each side
         pad1 = (0, 1, 0, 1)
         map4 = lateral4
-        map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
-        map2 = self.td2(F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
-        map1 = self.td3(lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))
+        map3 = lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest")
+        map2 = F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest")
+        map1 = lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest")
         return F.pad(lateral0, pad1, "reflect"), map1, map2, map3, map4

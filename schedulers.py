@@ -53,6 +53,6 @@ class LinearDecay(lr_scheduler._LRScheduler):
     def get_lr(self):
         if self.last_epoch < self.start_epoch:
             return self.base_lrs
-        return [base_lr - ((base_lr - self.min_lr) / num_epochs) * (self.last_epoch - self.start_epoch) for
+        return [base_lr - ((base_lr - self.min_lr) / self.num_epochs) * (self.last_epoch - self.start_epoch) for
                 base_lr in self.base_lrs]
 

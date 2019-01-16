@@ -1,10 +1,10 @@
 ---
 project: deblur_gan
 experiment_desc: fpn
-dataroot_train: /mnt/disks
-dataroot_val: /mnt/disks
+dataroot_train: /mnt/disks/GOPRO_3840
+dataroot_val: /mnt/disks/GOPRO_3840
 phase: train
-warmup_num: 0
+warmup_num: 3
 model:
     g_name: fpn_inception
     blocks: 9

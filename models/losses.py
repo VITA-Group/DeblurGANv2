@@ -7,6 +7,7 @@ import numpy as np
 import torchvision.models as models
 from util.image_pool import ImagePool
 from torch.autograd import Variable
+import torchvision.transforms as transforms
 ###############################################################################
 # Functions
 ###############################################################################
@@ -40,10 +41,9 @@ class PerceptualLoss():
 		with torch.no_grad():
 			self.criterion = loss
 			self.contentFunc = self.contentFunc()
+			self.transform = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 			
 	def get_loss(self, fakeIm, realIm):
-		# print()
-		# print(fakeIm.size(), realIm.size())
 		f_fake = self.contentFunc.forward(fakeIm)
 		f_real = self.contentFunc.forward(realIm)
 		f_real_no_grad = f_real.detach()
@@ -65,7 +65,7 @@ class GANLoss(nn.Module):
 		if use_l1:
 			self.loss = nn.L1Loss()
 		else:
-			self.loss = nn.BCELoss()
+			self.loss = nn.BCEWithLogitsLoss()
 
 	def get_target_tensor(self, input, target_is_real):
 		if target_is_real:
@@ -82,7 +82,7 @@ class GANLoss(nn.Module):
 				fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
 				self.fake_label_var = Variable(fake_tensor, requires_grad=False)
 			target_tensor = self.fake_label_var
-		return target_tensor
+		return target_tensor.cuda()
 
 	def __call__(self, input, target_is_real):
 		target_tensor = self.get_target_tensor(input, target_is_real)
@@ -98,7 +98,7 @@ class DiscLoss(nn.Module):
 		self.criterionGAN = GANLoss(use_l1=False)
 		self.fake_AB_pool = ImagePool(50)
 		
-	def get_g_loss(self,net, fakeB):
+	def get_g_loss(self,net, fakeB, realB):
 		# First, G(A) should fake the discriminator
 		pred_fake = net.forward(fakeB)
 		return self.criterionGAN(pred_fake, 1)
@@ -120,6 +120,87 @@ class DiscLoss(nn.Module):
 
 	def __call__(self, net, fakeB, realB):
 		return self.get_loss(net, fakeB, realB)
+
+
+class RelativisticDiscLoss(nn.Module):
+	def name(self):
+		return 'RelativisticDiscLoss'
+
+	def __init__(self):
+		super(RelativisticDiscLoss, self).__init__()
+
+		self.criterionGAN = GANLoss(use_l1=False)
+		self.fake_pool = ImagePool(50)  # create image buffer to store previously generated images
+		self.real_pool = ImagePool(50)
+
+	def get_g_loss(self, net, fakeB, realB):
+		# First, G(A) should fake the discriminator
+		self.pred_fake = net.forward(fakeB)
+
+		# Real
+		self.pred_real = net.forward(realB)
+		errG = (self.criterionGAN(self.pred_real - torch.mean(net.forward(self.fake_B)), 0) +
+					   self.criterionGAN(self.pred_fake - torch.mean(net.forward(self.real_B)), 1)) / 2
+		return errG
+
+	def get_loss(self, net, fakeB, realB):
+		# Fake
+		# stop backprop to the generator by detaching fake_B
+		# Generated Image Disc Output should be close to zero
+		self.fake_B = self.fake_pool.query(fakeB.detach())
+		self.real_B = self.real_pool.query(realB)
+		self.pred_fake = net.forward(fakeB.detach())
+
+		# Real
+		self.pred_real = net.forward(realB)
+
+		# Combined loss
+		self.loss_D = (self.criterionGAN(self.pred_real - torch.mean(net.forward(self.fake_B)), 1) +
+					   self.criterionGAN(self.pred_fake - torch.mean(net.forward(self.real_B)), 0)) / 2
+		return self.loss_D
+
+	def __call__(self, net, fakeB, realB):
+		return self.get_loss(net, fakeB, realB)
+
+class RelativisticDiscLossLS(nn.Module):
+	def name(self):
+		return 'RelativisticDiscLossLS'
+
+	def __init__(self):
+		super(RelativisticDiscLossLS, self).__init__()
+
+		self.criterionGAN = GANLoss(use_l1=True)
+		self.fake_pool = ImagePool(50)  # create image buffer to store previously generated images
+		self.real_pool = ImagePool(50)
+
+	def get_g_loss(self, net, fakeB, realB):
+		# First, G(A) should fake the discriminator
+		self.pred_fake = net.forward(fakeB)
+
+		# Real
+		self.pred_real = net.forward(realB)
+		errG = (torch.mean((self.pred_real - torch.mean(net.forward(self.fake_B)) + 1) ** 2) +
+				torch.mean((self.pred_fake - torch.mean(net.forward(self.real_B)) - 1) ** 2)) / 2
+		return errG
+
+	def get_loss(self, net, fakeB, realB):
+		# Fake
+		# stop backprop to the generator by detaching fake_B
+		# Generated Image Disc Output should be close to zero
+		self.fake_B = self.fake_pool.query(fakeB.detach())
+		self.real_B = self.real_pool.query(realB)
+		self.pred_fake = net.forward(fakeB.detach())
+
+		# Real
+		self.pred_real = net.forward(realB)
+
+		# Combined loss
+		self.loss_D = (torch.mean((self.pred_real - torch.mean(net.forward(self.fake_B)) - 1) ** 2) +
+					   torch.mean((self.pred_fake - torch.mean(net.forward(self.real_B)) + 1) ** 2)) / 2
+		return self.loss_D
+
+	def __call__(self, net, fakeB, realB):
+		return self.get_loss(net, fakeB, realB)
 		
 class DiscLossLS(DiscLoss):
 	def name(self):
@@ -129,7 +210,7 @@ class DiscLossLS(DiscLoss):
 		super(DiscLossLS, self).__init__()
 		self.criterionGAN = GANLoss(use_l1=True)
 		
-	def get_g_loss(self,net, fakeB):
+	def get_g_loss(self,net, fakeB, realB):
 		return DiscLoss.get_g_loss(self,net, fakeB)
 		
 	def get_loss(self, net, fakeB, realB):
@@ -143,7 +224,7 @@ class DiscLossWGANGP(DiscLossLS):
 		super(DiscLossWGANGP, self).__init__()
 		self.LAMBDA = 10
 		
-	def get_g_loss(self, net, fakeB):
+	def get_g_loss(self, net, fakeB, realB):
 		# First, G(A) should fake the discriminator
 		self.D_fake = net.forward(fakeB)
 		return -self.D_fake.mean()
@@ -197,6 +278,10 @@ def get_loss(model):
 		disc_loss = DiscLossLS()
 	elif model['disc_loss'] == 'gan':
 		disc_loss = DiscLoss()
+	elif model['disc_loss'] == 'ragan':
+		disc_loss = RelativisticDiscLoss()
+	elif model['disc_loss'] == 'ragan-ls':
+		disc_loss = RelativisticDiscLossLS()
 	else:
 		raise ValueError("GAN Loss [%s] not recognized." % model['disc_loss'])
 	return content_loss, disc_loss

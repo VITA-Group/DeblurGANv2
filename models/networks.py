@@ -201,7 +201,7 @@ def get_nets(model_config):
     if discriminator_name == 'n_layers':
         model_d = NLayerDiscriminator(n_layers=model_config['d_layers'],
                                       norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
-                                      use_sigmoid=(model_config['disc_loss'] == 'gan'))
+                                      use_sigmoid=False)
     else:
         raise ValueError("Discriminator Network [%s] not recognized." % discriminator_name)
 

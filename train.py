@@ -76,8 +76,7 @@ class Trainer(object):
 
 			self.optimizer_G.zero_grad()
 			loss_content = self.criterionG(outputs, targets)
-			loss_adv = self.criterionD.get_g_loss(self.netD, outputs)
-			#loss_aux = 0.5 * self.criterionG(aux, targets)
+			loss_adv = self.criterionD.get_g_loss(self.netD, outputs, targets)
 			loss_G = loss_content + 0.001 * loss_adv
 			loss_G.backward()
 			self.optimizer_G.step()

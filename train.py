@@ -16,7 +16,7 @@ from tensorboardX import SummaryWriter
 import logging
 
 logging.basicConfig(filename='res.log',level=logging.DEBUG)
-writer = SummaryWriter('fpn_se')
+writer = SummaryWriter('fpn_old')
 REPORT_EACH = 100
 torch.backends.cudnn.bencmark = True
 cv2.setNumThreads(0)
@@ -49,6 +49,9 @@ class Trainer(object):
 				torch.save({
 					'model': self.netG.state_dict()
 				}, 'best_{}.h5'.format(self.config['experiment_desc']))
+			torch.save({
+				'model': self.netG.state_dict()
+			}, 'last_{}.h5'.format(self.config['experiment_desc']))
 			print(('val_loss={}, val_metric={}, best_metric={}\n'.format(val_loss, val_metric, self.best_metric)))
 			logging.debug("Experiment Name: %s, Epoch: %d, Train Loss: %.3f, Val Accuracy: %.3f, Val Loss: %.3f, Best Loss: %.3f" % (
 				self.config['experiment_desc'], epoch, train_loss, val_loss, val_metric, self.best_metric))
@@ -173,9 +176,6 @@ class Trainer(object):
 
 
 if __name__ == '__main__':
-	if os.path.exists('train_images'):
-		shutil.rmtree('train_images')
-	os.makedirs('train_images')
 	with open('config/deblur_solver.yaml', 'r') as f:
 		config = yaml.load(f)
 	trainer = Trainer(config)

@@ -128,9 +128,96 @@ class ResnetBlock(nn.Module):
         out = x + self.conv_block(x)
         return out
 
+
+class DicsriminatorTail(nn.Module):
+    def __init__(self, nf_mult, n_layers, ndf=64, norm_layer=nn.BatchNorm2d, use_parallel=True):
+        super(DicsriminatorTail, self).__init__()
+        self.use_parallel = use_parallel
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        kw = 4
+        padw = int(np.ceil((kw-1)/2))
+
+        nf_mult_prev = nf_mult
+        nf_mult = min(2**n_layers, 8)
+        sequence = [
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
+                      kernel_size=kw, stride=1, padding=padw, bias=use_bias),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+
+        self.model = nn.Sequential(*sequence)
+
+    def forward(self, input):
+        return self.model(input)
+
+
+class MultiScaleDiscriminator(nn.Module):
+    def __init__(self, input_nc=3, ndf=64, norm_layer=nn.BatchNorm2d, use_parallel=True):
+        super(MultiScaleDiscriminator, self).__init__()
+        self.use_parallel = use_parallel
+        if type(norm_layer) == functools.partial:
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+
+        kw = 4
+        padw = int(np.ceil((kw-1)/2))
+        sequence = [
+            nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw),
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        nf_mult = 1
+        for n in range(1, n_layers):
+            nf_mult_prev = nf_mult
+            nf_mult = min(2**n, 8)
+            sequence += [
+                nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
+                          kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+                norm_layer(ndf * nf_mult),
+                nn.LeakyReLU(0.2, True)
+            ]
+
+        self.scale_one = nn.Sequential(*sequence)
+        self.first_tail = DicsriminatorTail(nf_mult=nf_mult, n_layers=3)
+        nf_mult_prev = 8
+        nf_mult = 8
+
+        self.scale_two = nn.Sequential([
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
+                      kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ])
+        self.second_tail = DicsriminatorTail(nf_mult=nf_mult, n_layers=4)
+        self.scale_three = nn.Sequential([
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
+                      kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ])
+        self.third_tail = DicsriminatorTail(nf_mult=nf_mult, n_layers=5)
+
+    def forward(self, input):
+        x = self.scale_one(input)
+        x_1 = self.first_tail(x)
+        x = self.scale_two(x)
+        x_2 = self.second_tail(x)
+        x = self.scale_three(x)
+        x = self.third_tail(x)
+        return x_1, x_2, x
+
+
 # Defines the PatchGAN discriminator with the specified arguments.
 class NLayerDiscriminator(nn.Module):
-    def __init__(self, input_nc=3, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_sigmoid=False, gpu_ids=[], use_parallel = True):
+    def __init__(self, input_nc=3, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d, use_sigmoid=False, use_parallel=True):
         super(NLayerDiscriminator, self).__init__()
         self.use_parallel = use_parallel
         if type(norm_layer) == functools.partial:
@@ -146,7 +233,6 @@ class NLayerDiscriminator(nn.Module):
         ]
 
         nf_mult = 1
-        nf_mult_prev = 1
         for n in range(1, n_layers):
             nf_mult_prev = nf_mult
             nf_mult = min(2**n, 8)
@@ -202,6 +288,8 @@ def get_nets(model_config):
         model_d = NLayerDiscriminator(n_layers=model_config['d_layers'],
                                       norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
                                       use_sigmoid=False)
+    elif discriminator_name == 'multi_scale':
+        model_d = MultiScaleDiscriminator(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
     else:
         raise ValueError("Discriminator Network [%s] not recognized." % discriminator_name)
 

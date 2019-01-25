@@ -11,7 +11,7 @@ import PIL
 from pdb import set_trace as st
 import random
 import cv2
-from albumentations import Compose, Rotate, Normalize, HorizontalFlip, RandomCrop
+from albumentations import Compose, Rotate, Normalize, HorizontalFlip, RandomCrop, CenterCrop
 
 class UnalignedDataset(BaseDataset):
     def initialize(self, config, filename):
@@ -37,17 +37,18 @@ class UnalignedDataset(BaseDataset):
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
 
-        self.transform = Compose([
-            HorizontalFlip(),
-            Rotate(limit=20, p=0.4),
-            RandomCrop(self.config['fineSize'], self.config['fineSize'])
-                                  ])
-        self.input_norm = Compose([Normalize(
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            )])
+        if filename == 'train':
+            self.transform = Compose([
+                HorizontalFlip(),
+                Rotate(limit=20, p=0.4),
+                RandomCrop(self.config['fineSize'], self.config['fineSize'])
+            ])
+        else:
+            self.transform = Compose([
+                CenterCrop(self.config['fineSize'], self.config['fineSize'])
+            ])
 
-        self.output_norm = Compose([Normalize(
+        self.norm = Compose([Normalize(
             mean=[0.5, 0.5, 0.5],
             std=[0.5, 0.5, 0.5],
         )])
@@ -61,8 +62,8 @@ class UnalignedDataset(BaseDataset):
         B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
         augmented = self.transform(image=A_img, mask=B_img)
 
-        A_img = self.output_norm(image=augmented['image'])['image']
-        B_img = self.output_norm(image=augmented['mask'])['image']
+        A_img = self.norm(image=augmented['image'])['image']
+        B_img = self.norm(image=augmented['mask'])['image']
 
         A = torch.from_numpy(np.transpose(A_img, (2, 0, 1)).astype('float32'))
         B = torch.from_numpy(np.transpose(B_img, (2, 0, 1)).astype('float32'))

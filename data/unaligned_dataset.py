@@ -11,7 +11,7 @@ import PIL
 from pdb import set_trace as st
 import random
 import cv2
-from albumentations import Compose, Rotate, Normalize, HorizontalFlip, RandomCrop, CenterCrop
+from albumentations import *
 
 class UnalignedDataset(BaseDataset):
     def initialize(self, config, filename):
@@ -40,13 +40,25 @@ class UnalignedDataset(BaseDataset):
         if filename == 'train':
             self.transform = Compose([
                 HorizontalFlip(),
-                Rotate(limit=20, p=0.4),
+                ShiftScaleRotate(shift_limit=0.0, scale_limit=0.2, rotate_limit=20, p=.4),
+                OneOf([
+                    CLAHE(clip_limit=2),
+                    IAASharpen(),
+                    IAAEmboss(),
+                    RandomContrast(),
+                    RandomBrightness(),
+                    RandomGamma()
+                ], p=0.5),
+                OneOf([
+                    RGBShift(),
+                    HueSaturationValue(),
+                ], p=0.5),
                 RandomCrop(self.config['fineSize'], self.config['fineSize'])
-            ])
+            ], additional_targets={'image2': 'image'})
         else:
             self.transform = Compose([
                 CenterCrop(self.config['fineSize'], self.config['fineSize'])
-            ])
+            ], additional_targets={'image2': 'image'})
 
         self.norm = Compose([Normalize(
             mean=[0.5, 0.5, 0.5],
@@ -60,10 +72,10 @@ class UnalignedDataset(BaseDataset):
         A_img = cv2.cvtColor(A_img, cv2.COLOR_BGR2RGB)
         B_img = cv2.imread(B_path)
         B_img = cv2.cvtColor(B_img, cv2.COLOR_BGR2RGB)
-        augmented = self.transform(image=A_img, mask=B_img)
+        augmented = self.transform(image=A_img, image2=B_img)
 
         A_img = self.norm(image=augmented['image'])['image']
-        B_img = self.norm(image=augmented['mask'])['image']
+        B_img = self.norm(image=augmented['image2'])['image']
 
         A = torch.from_numpy(np.transpose(A_img, (2, 0, 1)).astype('float32'))
         B = torch.from_numpy(np.transpose(B_img, (2, 0, 1)).astype('float32'))

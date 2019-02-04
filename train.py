@@ -9,11 +9,16 @@ import os
 import yaml
 from schedulers import WarmRestart, LinearDecay
 import numpy as np
-import logging
 from models.networks import get_nets
 from models.losses import get_loss
 from models.models import get_model
-from metric_counter import MetricCounter
+from tensorboardX import SummaryWriter
+import logging
+
+logging.basicConfig(filename='res.log',level=logging.DEBUG)
+writer = SummaryWriter('fpn_se')
+REPORT_EACH = 100
+torch.backends.cudnn.bencmark = True
 cv2.setNumThreads(0)
 
 class Trainer(object):
@@ -21,9 +26,9 @@ class Trainer(object):
 		self.config = config
 		self.train_dataset = self._get_dataset(config, 'train')
 		self.val_dataset = self._get_dataset(config, 'test')
-		self.adv_lambda = config['model']['adv_lambda']
-		self.metric_counter = MetricCounter(config['experiment_desc'])
+		self.best_metric = 0
 		self.warmup_epochs = config['warmup_num']
+
 
 	def train(self):
 		self._init_params()
@@ -32,24 +37,33 @@ class Trainer(object):
 				self.netG.module.unfreeze()
 				self.optimizer_G = self._get_optim(self.netG)
 				self.scheduler_G = self._get_scheduler(self.optimizer_G)
-			self._run_epoch(epoch)
-			self._validate(epoch)
-			self.scheduler_G.step()
-			self.scheduler_D.step()
 
-			if self.metric_counter.update_best_model():
+			train_loss = self._run_epoch(epoch)
+			val_loss, val_psnr = self._validate(epoch)
+			self.scheduler_G.step()
+
+			val_metric = val_psnr
+
+			if val_metric > self.best_metric:
+				self.best_metric = val_metric
 				torch.save({
 					'model': self.netG.state_dict()
 				}, 'best_{}.h5'.format(self.config['experiment_desc']))
 			torch.save({
 				'model': self.netG.state_dict()
 			}, 'last_{}.h5'.format(self.config['experiment_desc']))
-			print(self.metric_counter.loss_message())
-			logging.debug("Experiment Name: %s, Epoch: %d, Loss: %s" % (
-				self.config['experiment_desc'], epoch, self.metric_counter.loss_message()))
+			print(('val_loss={}, val_metric={}, best_metric={}\n'.format(val_loss, val_metric, self.best_metric)))
+			logging.debug("Experiment Name: %s, Epoch: %d, Train Loss: %.3f, Val Accuracy: %.3f, Val Loss: %.3f, Best Loss: %.3f" % (
+				self.config['experiment_desc'], epoch, train_loss, val_loss, val_metric, self.best_metric))
 
 	def _run_epoch(self, epoch):
-		self.metric_counter.clear()
+		losses_G = []
+		losses_vgg = []
+		losses_adv = []
+		psnrs = []
+		ssim = []
+		batches_per_epoch = len(self.train_dataset) / config['batch_size']
+
 		for param_group in self.optimizer_G.param_groups:
 			lr = param_group['lr']
 		tq = tqdm.tqdm(self.train_dataset.dataloader)
@@ -59,40 +73,61 @@ class Trainer(object):
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
 			self.optimizer_D.zero_grad()
-			loss_D = self.adv_lambda * self.criterionD(self.netD, outputs, targets)
+			loss_D = 0.001 * self.criterionD(self.netD, outputs, targets)
 			loss_D.backward(retain_graph=True)
 			self.optimizer_D.step()
 
 			self.optimizer_G.zero_grad()
 			loss_content = self.criterionG(outputs, targets)
 			loss_adv = self.criterionD.get_g_loss(self.netD, outputs, targets)
-			loss_G = loss_content + self.adv_lambda * loss_adv
+			loss_G = loss_content + 0.001 * loss_adv
 			loss_G.backward()
 			self.optimizer_G.step()
-			self.metric_counter.add_losses(loss_G.item(), loss_D.item(), loss_content.item(), loss_adv.item())
+			losses_G.append(loss_G.item())
+			losses_vgg.append(loss_content.item())
+			losses_adv.append(loss_adv.item())
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets)
-			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
-			tq.set_postfix(loss=self.metric_counter.loss_message())
+			psnrs.append(curr_psnr)
+			ssim.append(curr_ssim)
+			mean_loss_G = np.mean(losses_G[-REPORT_EACH:])
+			mean_loss_vgg = np.mean(losses_vgg[-REPORT_EACH:])
+			mean_loss_adv = np.mean(losses_adv[-REPORT_EACH:])
+			mean_psnr = np.mean(psnrs[-REPORT_EACH:])
+			mean_ssim = np.mean(ssim[-REPORT_EACH:])
+			if i % 1000 == 0:
+				writer.add_scalar('Train_G_Loss', mean_loss_G, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_G_Loss_vgg', mean_loss_vgg, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_G_Loss_adv', mean_loss_adv, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_PSNR', mean_psnr, i + (batches_per_epoch * epoch))
+				writer.add_scalar('Train_SSIM', mean_ssim, i + (batches_per_epoch * epoch))
+			tq.set_postfix(loss=self.model.get_loss(mean_loss_G, mean_psnr, mean_ssim, outputs, targets))
 			i += 1
 		tq.close()
-		self.metric_counter.write_to_tensorboard(epoch)
+		return np.mean(losses_G)
 
 	def _validate(self, epoch):
-		self.metric_counter.clear()
+		losses = []
+		psnrs = []
+		ssim = []
 		tq = tqdm.tqdm(self.val_dataset.dataloader)
 		tq.set_description('Validation')
 		for data in tq:
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
-			loss_D = self.adv_lambda * self.criterionD(self.netD, outputs, targets)
 			loss_content = self.criterionG(outputs, targets)
-			loss_adv = self.criterionD.get_g_loss(self.netD, outputs, targets)
-			loss_G = loss_content + self.adv_lambda * loss_adv
-			self.metric_counter.add_losses(loss_G.item(), loss_D.item(), loss_content.item(), loss_adv.item())
+			loss_G = loss_content + 0.001 * self.criterionD.get_g_loss(self.netD, outputs, targets)
+			losses.append(loss_G.item())
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets, full=True)
-			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
+			psnrs.append(curr_psnr)
+			ssim.append(curr_ssim)
+		val_loss = np.mean(losses)
+		val_psnr = np.mean(psnrs)
+		val_ssim = np.mean(ssim)
 		tq.close()
-		self.metric_counter.write_to_tensorboard(epoch, validation=True)
+		writer.add_scalar('Validation_Loss', val_loss, epoch)
+		writer.add_scalar('Validation_PSNR', val_psnr, epoch)
+		writer.add_scalar('Validation_SSIM', val_ssim, epoch)
+		return val_loss, val_psnr
 
 	def _get_dataset(self, config, filename):
 		data_loader = CreateDataLoader(config, filename)
@@ -135,7 +170,7 @@ class Trainer(object):
 		self.model = get_model(self.config['model'])
 		self.criterionG, self.criterionD = get_loss(self.config['model'])
 		self.optimizer_G = self._get_optim(self.netG)
-		self.optimizer_D = self._get_optim(self.netD)
+		self.optimizer_D = self._get_optim(self.netD, disc=True)
 		self.scheduler_G = self._get_scheduler(self.optimizer_G)
 		self.scheduler_D = self._get_scheduler(self.optimizer_D)
 

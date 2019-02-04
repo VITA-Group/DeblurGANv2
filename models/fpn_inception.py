@@ -77,7 +77,7 @@ class FPNInception(nn.Module):
         smoothed = nn.functional.upsample(smoothed, scale_factor=2, mode="nearest")
 
         final = self.final(smoothed)
-        res = 2 * torch.tanh(final) + x
+        res = torch.tanh(final) + x
 
         return torch.clamp(res, min = -1,max = 1)
 
@@ -130,20 +130,6 @@ class FPN(nn.Module):
         self.lateral1 = nn.Conv2d(64, num_filters, kernel_size=1, bias=False)
         self.lateral0 = nn.Conv2d(32, num_filters // 2, kernel_size=1, bias=False)
 
-        self.lat_conv1 = nn.Sequential(ConvBlock(num_filters, num_filters, norm_layer))
-
-        self.lat_conv2 = nn.Sequential(ConvBlock(num_filters, num_filters, norm_layer),
-                                       ConvBlock(num_filters, num_filters, norm_layer))
-
-        self.lat_conv3 = nn.Sequential(ConvBlock(num_filters, num_filters, norm_layer),
-                                       ConvBlock(num_filters, num_filters, norm_layer),
-                                       ConvBlock(num_filters, num_filters, norm_layer))
-
-        self.lat_conv4 = nn.Sequential(ConvBlock(num_filters, num_filters, norm_layer),
-                                       ConvBlock(num_filters, num_filters, norm_layer),
-                                       ConvBlock(num_filters, num_filters, norm_layer),
-                                       ConvBlock(num_filters, num_filters, norm_layer))
-
         for param in self.inception.parameters():
             param.requires_grad = False
 
@@ -175,8 +161,8 @@ class FPN(nn.Module):
         # Top-down pathway
         pad = (1, 2, 1, 2)  # pad last dim by 1 on each side
         pad1 = (0, 1, 0, 1)
-        map4 = self.lat_conv4(lateral4)
-        map3 = self.td1(self.lat_conv3(lateral3) + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
-        map2 = self.td2(F.pad(self.lat_conv2(lateral2), pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
-        map1 = self.td3(self.lat_conv1(lateral1) + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))
+        map4 = lateral4
+        map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
+        map2 = self.td2(F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
+        map1 = self.td3(lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))
         return F.pad(lateral0, pad1, "reflect"), map1, map2, map3, map4

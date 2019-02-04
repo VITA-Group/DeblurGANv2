@@ -37,10 +37,6 @@ class DeblurModel(nn.Module):
 
         return psnr, ssim
 
-    def get_loss(self, mean_loss, mean_psnr, mean_ssim, output=None, target=None):
-        return '{:.3f}; psnr={}; ssim={}'.format(mean_loss, mean_psnr, mean_ssim)
-
-
 def get_model(model_config):
     return DeblurModel()
 

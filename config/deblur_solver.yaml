@@ -11,10 +11,9 @@ model:
     d_name: n_layers
     d_layers: 3
     content_loss: perceptual
+    adv_lambda: 0.001
     disc_loss: wgan-gp
     learn_residual: True
-    backbone: resnet34
-    pretrained: False
     norm_layer: instance
     dropout: True  
 num_epochs: 100

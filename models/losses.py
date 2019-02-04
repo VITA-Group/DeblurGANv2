@@ -44,11 +44,15 @@ class PerceptualLoss():
 			self.transform = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 			
 	def get_loss(self, fakeIm, realIm):
+		fakeIm = (fakeIm + 1) / 2.0
+		realIm = (realIm + 1) / 2.0
+		fakeIm[0, :, :, :] = self.transform(fakeIm[0, :, :, :])
+		realIm[0, :, :, :] = self.transform(realIm[0, :, :, :])
 		f_fake = self.contentFunc.forward(fakeIm)
 		f_real = self.contentFunc.forward(realIm)
 		f_real_no_grad = f_real.detach()
-		loss = self.criterion(f_fake, f_real_no_grad) + 0.5 * nn.L1Loss()(fakeIm, realIm)
-		return torch.mean(loss)
+		loss = self.criterion(f_fake, f_real_no_grad)
+		return 0.006 * torch.mean(loss) + 0.5 * nn.MSELoss()(fakeIm, realIm)
 
 	def __call__(self, fakeIm, realIm):
 		return self.get_loss(fakeIm, realIm)
@@ -187,8 +191,8 @@ class RelativisticDiscLossLS(nn.Module):
 		# Fake
 		# stop backprop to the generator by detaching fake_B
 		# Generated Image Disc Output should be close to zero
-		self.fake_B = self.fake_pool.query(fakeB.detach())
-		self.real_B = self.real_pool.query(realB)
+		self.fake_B = fakeB.detach()
+		self.real_B = realB
 		self.pred_fake = net.forward(fakeB.detach())
 
 		# Real

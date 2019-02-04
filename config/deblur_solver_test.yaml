@@ -1,0 +1,34 @@
+---
+project: deblur_gan
+experiment_desc: fpn
+dataroot_train: /mnt/disks/GOPRO_3840
+dataroot_val: /mnt/disks/GOPRO_3840
+phase: train
+warmup_num: 3
+model:
+    g_name: fpn_inception
+    blocks: 9
+    d_name: n_layers
+    d_layers: 3
+    content_loss: perceptual
+    disc_loss: wgan-gp
+    learn_residual: True
+    backbone: resnet34
+    pretrained: False
+    norm_layer: instance
+    dropout: True  
+num_epochs: 100
+num_workers: 4
+batch_size: 1
+image_size: [256, 256]
+fineSize: 256
+dataset: 
+    mode: unaligned
+optimizer: 
+    name: adam
+    lr: 0.0001
+scheduler:
+    name: linear
+    start_epoch: 50
+    min_lr: 0.0000001
+

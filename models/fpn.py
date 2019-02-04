@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from models.senet import se_resnext50_32x4d
-from torchvision.models import resnet50, densenet121, densenet201
+#from models.senet import se_resnext50_32x4d
+from pretrainedmodels import se_resnext50_32x4d
 
 class FPNHead(nn.Module):
     def __init__(self, num_in, num_mid, num_out):
@@ -47,6 +47,9 @@ class FPNNet(nn.Module):
 
         self.final = nn.Conv2d(num_filters // 2, output_ch, kernel_size=3, padding=1)
 
+    def unfreeze(self):
+        self.fpn.unfreeze()
+
     def forward(self, x):
 
         map0, map1, map2, map3, map4 = self.fpn(x)
@@ -77,8 +80,8 @@ class FPN(nn.Module):
         """
 
         super().__init__()
-        pretrain = None
-        self.features = se_resnext50_32x4d(num_classes=1000, pretrained=pretrain)
+        #pretrain = None
+        self.features = se_resnext50_32x4d(num_classes=1000, pretrained='imagenet')
 
         self.enc0 = self.features.layer0
         self.enc1 = self.features.layer1  # 256
@@ -91,6 +94,13 @@ class FPN(nn.Module):
         self.lateral2 = nn.Conv2d(512, num_filters, kernel_size=1, bias=False)
         self.lateral1 = nn.Conv2d(256, num_filters, kernel_size=1, bias=False)
         self.lateral0 = nn.Conv2d(64, num_filters // 2, kernel_size=1, bias=False)
+
+        for param in self.features.parameters():
+            param.requires_grad = False
+
+    def unfreeze(self):
+        for param in self.features.parameters():
+            param.requires_grad = True
 
 
     def forward(self, x):

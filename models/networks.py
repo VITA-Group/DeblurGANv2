@@ -6,6 +6,7 @@ from torch.autograd import Variable
 import numpy as np
 from models.fpn import FPNNet
 from models.fpn_inception import FPNInception
+from models.fpn_inception_simple import FPNInceptionSimple
 from models.unet_seresnext import UNetSEResNext
 from models.fpn_densenet import FPNDense
 ###############################################################################
@@ -175,7 +176,7 @@ class MultiScaleDiscriminator(nn.Module):
         ]
 
         nf_mult = 1
-        for n in range(1, n_layers):
+        for n in range(1, 3):
             nf_mult_prev = nf_mult
             nf_mult = min(2**n, 8)
             sequence += [
@@ -187,22 +188,20 @@ class MultiScaleDiscriminator(nn.Module):
 
         self.scale_one = nn.Sequential(*sequence)
         self.first_tail = DicsriminatorTail(nf_mult=nf_mult, n_layers=3)
-        nf_mult_prev = 8
+        nf_mult_prev = 4
         nf_mult = 8
 
-        self.scale_two = nn.Sequential([
+        self.scale_two = nn.Sequential(
             nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
                       kernel_size=kw, stride=2, padding=padw, bias=use_bias),
             norm_layer(ndf * nf_mult),
-            nn.LeakyReLU(0.2, True)
-        ])
+            nn.LeakyReLU(0.2, True))
+        nf_mult_prev = nf_mult
         self.second_tail = DicsriminatorTail(nf_mult=nf_mult, n_layers=4)
-        self.scale_three = nn.Sequential([
-            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult,
-                      kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+        self.scale_three = nn.Sequential(
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=use_bias),
             norm_layer(ndf * nf_mult),
-            nn.LeakyReLU(0.2, True)
-        ])
+            nn.LeakyReLU(0.2, True))
         self.third_tail = DicsriminatorTail(nf_mult=nf_mult, n_layers=5)
 
     def forward(self, input):
@@ -212,7 +211,7 @@ class MultiScaleDiscriminator(nn.Module):
         x_2 = self.second_tail(x)
         x = self.scale_three(x)
         x = self.third_tail(x)
-        return x_1, x_2, x
+        return [x_1, x_2, x]
 
 
 # Defines the PatchGAN discriminator with the specified arguments.
@@ -263,6 +262,13 @@ class NLayerDiscriminator(nn.Module):
         return self.model(input)
 
 
+def get_fullD(model_config):
+    model_d = NLayerDiscriminator(n_layers=5,
+                                  norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
+                                  use_sigmoid=False)
+    return model_d
+
+
 def get_nets(model_config):
     generator_name = model_config['g_name']
     if generator_name == 'resnet':
@@ -275,6 +281,8 @@ def get_nets(model_config):
                          pretrained=model_config['pretrained'])
     elif generator_name == 'fpn_inception':
         model_g = FPNInception(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
+    elif generator_name == 'fpn_inception_simple':
+        model_g = FPNInceptionSimple(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
     elif generator_name == 'fpn_dense':
         model_g = FPNDense()
     elif generator_name == 'unet_seresnext':

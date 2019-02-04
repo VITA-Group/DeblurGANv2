@@ -16,7 +16,7 @@ from tensorboardX import SummaryWriter
 import logging
 
 logging.basicConfig(filename='res.log',level=logging.DEBUG)
-writer = SummaryWriter('fpn_old')
+writer = SummaryWriter('fpn_se')
 REPORT_EACH = 100
 torch.backends.cudnn.bencmark = True
 cv2.setNumThreads(0)
@@ -115,7 +115,7 @@ class Trainer(object):
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
 			loss_content = self.criterionG(outputs, targets)
-			loss_G = loss_content + 0.001 * self.criterionD.get_g_loss(self.netD, outputs)
+			loss_G = loss_content + 0.001 * self.criterionD.get_g_loss(self.netD, outputs, targets)
 			losses.append(loss_G.item())
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets, full=True)
 			psnrs.append(curr_psnr)
@@ -170,7 +170,7 @@ class Trainer(object):
 		self.model = get_model(self.config['model'])
 		self.criterionG, self.criterionD = get_loss(self.config['model'])
 		self.optimizer_G = self._get_optim(self.netG)
-		self.optimizer_D = self._get_optim(self.netD)
+		self.optimizer_D = self._get_optim(self.netD, disc=True)
 		self.scheduler_G = self._get_scheduler(self.optimizer_G)
 		self.scheduler_D = self._get_scheduler(self.optimizer_D)
 

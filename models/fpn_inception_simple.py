@@ -29,7 +29,7 @@ class ConvBlock(nn.Module):
         return x
 
 
-class FPNInception(nn.Module):
+class FPNInceptionSimple(nn.Module):
 
     def __init__(self, norm_layer, output_ch=3, num_filters=128, num_filters_fpn=256):
         super().__init__()
@@ -114,15 +114,7 @@ class FPN(nn.Module):
             self.inception.repeat_1,
             self.inception.mixed_7a,
         ) #2080
-        self.td1 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
-        self.td2 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
-        self.td3 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
+
         self.pad = nn.ReflectionPad2d(1)
         self.lateral4 = nn.Conv2d(2080, num_filters, kernel_size=1, bias=False)
         self.lateral3 = nn.Conv2d(1088, num_filters, kernel_size=1, bias=False)
@@ -162,7 +154,7 @@ class FPN(nn.Module):
         pad = (1, 2, 1, 2)  # pad last dim by 1 on each side
         pad1 = (0, 1, 0, 1)
         map4 = lateral4
-        map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
-        map2 = self.td2(F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
-        map1 = self.td3(lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))
+        map3 = lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest")
+        map2 = F.pad(lateral2, pad, "reflect") + nn.functional.upsample(map3, scale_factor=2, mode="nearest")
+        map1 = lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest")
         return F.pad(lateral0, pad1, "reflect"), map1, map2, map3, map4

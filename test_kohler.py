@@ -57,7 +57,7 @@ def test(model, args, files):
 
 if __name__ == '__main__':
 	args = get_args()
-	with open('config/deblur_solver.yaml', 'r') as f:
+	with open('config/deblur_solver_test.yaml', 'r') as f:
 		config = yaml.load(f)
 	model, _ = get_nets(config['model'])
 	model.load_state_dict(torch.load(args.weights_path)['model'])

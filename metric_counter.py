@@ -45,6 +45,7 @@ class MetricCounter():
         scalar_prefix = 'Validation' if validation else 'Train'
         self.writer.add_scalar('{}_G_Loss'.format(scalar_prefix), np.mean(self.G_loss), epoch_num)
         self.writer.add_scalar('{}_D_Loss'.format(scalar_prefix), np.mean(self.D_loss), epoch_num)
+        self.writer.add_scalar('{}_G_Loss_adv'.format(scalar_prefix), np.mean(self.adv_loss), epoch_num)
         self.writer.add_scalar('{}_G_Loss_content'.format(scalar_prefix), np.mean(self.content_loss), epoch_num)
         self.writer.add_scalar('{}_SSIM'.format(scalar_prefix), np.mean(self.ssim), epoch_num)
         self.writer.add_scalar('{}_PSNR'.format(scalar_prefix), np.mean(self.psnr), epoch_num)

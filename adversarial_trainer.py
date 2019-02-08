@@ -1,4 +1,5 @@
 import torch
+import copy
 
 
 class AdversarialTrainerFactory:
@@ -74,18 +75,17 @@ class DoubleAdversarialTrainer(AdversarialTrainer):
         self.fullD = netD['full']
         self.patchD = self.patchD.cuda()
         self.fullD = self.fullD.cuda()
+        self.full_criterion = copy.deepcopy(criterion)
 
     def lossD(self, pred, gt):
-        return (self.criterion(self.patchD, pred, gt) + self.criterion(self.fullD, pred, gt)) / 2
+        return (self.criterion(self.patchD, pred, gt) + self.full_criterion(self.fullD, pred, gt)) / 2
 
     def lossG(self, pred, gt):
-        return (self.criterion.get_g_loss(self.patchD, pred, gt) + self.criterion.get_g_loss(self.fullD, pred, gt)) / 2
+        return (self.criterion.get_g_loss(self.patchD, pred, gt) + self.full_criterion.get_g_loss(self.fullD, pred, gt)) / 2
 
     def get_params(self):
         return list(self.patchD.parameters()) + list(self.fullD.parameters())
 
     class Factory:
         def create(self, netD, criterion): return DoubleAdversarialTrainer(netD, criterion)
-
-
 

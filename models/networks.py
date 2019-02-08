@@ -292,13 +292,26 @@ def get_nets(model_config):
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
 
     discriminator_name = model_config['d_name']
-    if discriminator_name == 'n_layers':
+    if discriminator_name == 'no_gan':
+        model_d = None
+    elif discriminator_name == 'patch_gan':
         model_d = NLayerDiscriminator(n_layers=model_config['d_layers'],
                                       norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
                                       use_sigmoid=False)
+        model_d = nn.DataParallel(model_d)
+    elif discriminator_name == 'double_gan':
+        patch_gan = NLayerDiscriminator(n_layers=model_config['d_layers'],
+                                      norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
+                                      use_sigmoid=False)
+        patch_gan = nn.DataParallel(patch_gan)
+        full_gan = get_fullD(model_config)
+        full_gan = nn.DataParallel(full_gan)
+        model_d = {'patch': patch_gan,
+                   'full': full_gan}
     elif discriminator_name == 'multi_scale':
         model_d = MultiScaleDiscriminator(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
+        model_d = nn.DataParallel(model_d)
     else:
         raise ValueError("Discriminator Network [%s] not recognized." % discriminator_name)
 
-    return nn.DataParallel(model_g), nn.DataParallel(model_d)
+    return nn.DataParallel(model_g), model_d

@@ -1,99 +1,91 @@
 import torch
-import copy
 
 
-class GANFactory:
+class AdversarialTrainerFactory:
     factories = {}
 
-    def __init__(self):
-        pass
-
-    def add_factory(gan_id, model_factory):
-        GANFactory.factories.put[gan_id] = model_factory
-
-    add_factory = staticmethod(add_factory)
-
+    def addFactory(id, modelFactory):
+        AdversarialTrainerFactory.factories.put[id] = modelFactory
+    addFactory = staticmethod(addFactory)
     # A Template Method:
 
-    def create_model(gan_id, net_d=None, criterion=None):
-        if gan_id not in GANFactory.factories:
-            GANFactory.factories[gan_id] = \
-                eval(gan_id + '.Factory()')
-        return GANFactory.factories[gan_id].create(net_d, criterion)
+    def createModel(id, netD=None, criterion=None):
+        if id not in AdversarialTrainerFactory.factories:
+            AdversarialTrainerFactory.factories[id] = \
+              eval(id + '.Factory()')
+        return AdversarialTrainerFactory.factories[id].create(netD, criterion)
+    createModel = staticmethod(createModel)
 
-    create_model = staticmethod(create_model)
 
-
-class GANTrainer(object):
-    def __init__(self, net_d, criterion):
-        self.net_d = net_d
+class AdversarialTrainer(object):
+    def __init__(self, netD, criterion):
+        self.netD = netD
         self.criterion = criterion
 
-    def loss_d(self, pred, gt):
+    def lossD(self, pred, gt):
         pass
 
-    def loss_g(self, pred, gt):
+    def lossG(self, pred, gt):
         pass
 
     def get_params(self):
         pass
 
 
-class NoGAN(GANTrainer):
-    def __init__(self, net_d, criterion):
-        GANTrainer.__init__(self, net_d, criterion)
+class NoAdversarialTrainer(AdversarialTrainer):
+    def __init__(self, netD, criterion):
+        AdversarialTrainer.__init__(self, netD, criterion)
 
-    def loss_d(self, pred, gt):
-        return [0]
+    def lossD(self, pred, gt):
+        return 0
 
-    def loss_g(self, pred, gt):
+    def lossG(self, pred, gt):
         return 0
 
     def get_params(self):
         return [torch.nn.Parameter(torch.Tensor(1))]
 
     class Factory:
-        @staticmethod
-        def create(net_d, criterion): return NoGAN(net_d, criterion)
+        def create(self, netD, criterion): return NoAdversarialTrainer(netD, criterion)
 
 
-class SingleGAN(GANTrainer):
-    def __init__(self, net_d, criterion):
-        GANTrainer.__init__(self, net_d, criterion)
-        self.net_d = self.net_d.cuda()
+class SingleAdversarialTrainer(AdversarialTrainer):
+    def __init__(self, netD, criterion):
+        AdversarialTrainer.__init__(self, netD, criterion)
+        self.netD = self.netD.cuda()
 
-    def loss_d(self, pred, gt):
-        return self.criterion(self.net_d, pred, gt)
+    def lossD(self, pred, gt):
+        return self.criterion(self.netD, pred, gt)
 
-    def loss_g(self, pred, gt):
-        return self.criterion.get_g_loss(self.net_d, pred, gt)
-
-    def get_params(self):
-        return self.net_d.parameters()
-
-    class Factory:
-        @staticmethod
-        def create(net_d, criterion): return SingleGAN(net_d, criterion)
-
-
-class DoubleGAN(GANTrainer):
-    def __init__(self, net_d, criterion):
-        GANTrainer.__init__(self, net_d, criterion)
-        self.patch_d = net_d['patch'].cuda()
-        self.full_d = net_d['full'].cuda()
-        self.full_criterion = copy.deepcopy(criterion)
-
-    def loss_d(self, pred, gt):
-        return (self.criterion(self.patch_d, pred, gt) + self.full_criterion(self.full_d, pred, gt)) / 2
-
-    def loss_g(self, pred, gt):
-        return (self.criterion.get_g_loss(self.patch_d, pred, gt) + self.full_criterion.get_g_loss(self.full_d, pred,
-                                                                                                  gt)) / 2
+    def lossG(self, pred, gt):
+        return self.criterion.get_g_loss(self.netD, pred, gt)
 
     def get_params(self):
-        return list(self.patch_d.parameters()) + list(self.full_d.parameters())
+        return self.netD.parameters()
 
     class Factory:
-        @staticmethod
-        def create(net_d, criterion): return DoubleGAN(net_d, criterion)
+        def create(self, netD, criterion): return SingleAdversarialTrainer(netD, criterion)
+
+
+class DoubleAdversarialTrainer(AdversarialTrainer):
+    def __init__(self, netD, criterion):
+        AdversarialTrainer.__init__(self, netD, criterion)
+        self.patchD = netD['patch']
+        self.fullD = netD['full']
+        self.patchD = self.patchD.cuda()
+        self.fullD = self.fullD.cuda()
+
+    def lossD(self, pred, gt):
+        return (self.criterion(self.patchD, pred, gt) + self.criterion(self.fullD, pred, gt)) / 2
+
+    def lossG(self, pred, gt):
+        return (self.criterion.get_g_loss(self.patchD, pred, gt) + self.criterion.get_g_loss(self.fullD, pred, gt)) / 2
+
+    def get_params(self):
+        return list(self.patchD.parameters()) + list(self.fullD.parameters())
+
+    class Factory:
+        def create(self, netD, criterion): return DoubleAdversarialTrainer(netD, criterion)
+
+
 

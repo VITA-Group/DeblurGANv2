@@ -86,7 +86,7 @@ class Trainer(object):
 			loss_adv = self.adv_trainer.lossG(outputs, targets)
 			loss_G = loss_content + self.adv_lambda * loss_adv
 			self.metric_counter.add_losses(loss_G.item(), loss_content.item())
-			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets, full=True)
+			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets)
 			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
 		tq.close()
 		self.metric_counter.write_to_tensorboard(epoch, validation=True)

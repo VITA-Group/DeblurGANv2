@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-#from models.senet import se_resnext50_32x4d
-from pretrainedmodels import se_resnext50_32x4d
+from models.mobilenet_v2 import MobileNetV2
 
 class FPNHead(nn.Module):
     def __init__(self, num_in, num_mid, num_out):
@@ -16,7 +15,7 @@ class FPNHead(nn.Module):
         return x
 
 
-class FPNNet(nn.Module):
+class FPNMobileNet(nn.Module):
 
     def __init__(self, norm_layer, output_ch=3, num_filters=128, num_filters_fpn=256, pretrained=True):
         super().__init__()
@@ -81,7 +80,12 @@ class FPN(nn.Module):
 
         super().__init__()
         #pretrain = None
-        self.features = se_resnext50_32x4d(num_classes=1000, pretrained='imagenet')
+        net = MobileNetV2(n_class=1000)
+        #state_dict = torch.load('mobilenetv2.pth.tar') # add map_location='cpu' if no gpu
+        #net.load_state_dict(state_dict)
+        self.features = net.features
+        print(self.features)
+        print(len(self.features))
 
         self.enc0 = self.features.layer0
         self.enc1 = self.features.layer1  # 256

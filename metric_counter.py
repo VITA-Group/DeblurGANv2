@@ -24,7 +24,7 @@ class MetricCounter():
         self.psnr = []
         self.ssim = []
 
-    def add_losses(self, l_G, l_D, l_content):
+    def add_losses(self, l_G, l_content, l_D=0):
         self.G_loss.append(l_G)
         self.content_loss.append(l_content)
         self.adv_loss.append(l_G - l_content)

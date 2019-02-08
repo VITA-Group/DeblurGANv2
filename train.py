@@ -17,6 +17,7 @@ from metric_counter import MetricCounter
 from adversarial_trainer import AdversarialTrainerFactory
 cv2.setNumThreads(0)
 
+
 class Trainer(object):
 	def __init__(self, config):
 		self.config = config

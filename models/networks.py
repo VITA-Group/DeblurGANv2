@@ -86,7 +86,6 @@ class ResnetGenerator(nn.Module):
         return output
 
 
-
 # Define a resnet block
 class ResnetBlock(nn.Module):
     def __init__(self, dim, padding_type, norm_layer, use_dropout, use_bias):
@@ -269,7 +268,8 @@ def get_fullD(model_config):
     return model_d
 
 
-def get_generator(generator_name):
+def get_generator(model_config):
+    generator_name = model_config['g_name']
     if generator_name == 'resnet':
         model_g = ResnetGenerator(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
                                   use_dropout=model_config['dropout'],
@@ -293,7 +293,8 @@ def get_generator(generator_name):
     return nn.DataParallel(model_g)
 
 
-def get_discriminator(discriminator_name):
+def get_discriminator(model_config):
+    discriminator_name = model_config['d_name']
     if discriminator_name == 'no_gan':
         model_d = None
     elif discriminator_name == 'patch_gan':
@@ -320,4 +321,4 @@ def get_discriminator(discriminator_name):
 
 
 def get_nets(model_config):
-    return get_generator(model_config['g_name']), get_discriminator(model_config['d_name'])
+    return get_generator(model_config), get_discriminator(model_config)

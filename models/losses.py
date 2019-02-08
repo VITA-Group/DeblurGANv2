@@ -143,24 +143,26 @@ class RelativisticDiscLoss(nn.Module):
 
 		# Real
 		self.pred_real = net.forward(realB)
-		errG = (self.criterionGAN(self.pred_real - torch.mean(net.forward(self.fake_B)), 0) +
-					   self.criterionGAN(self.pred_fake - torch.mean(net.forward(self.real_B)), 1)) / 2
+		errG = (self.criterionGAN(self.pred_real - torch.mean(self.fake_pool.query()), 0) +
+					   self.criterionGAN(self.pred_fake - torch.mean(self.real_pool.query()), 1)) / 2
 		return errG
 
 	def get_loss(self, net, fakeB, realB):
 		# Fake
 		# stop backprop to the generator by detaching fake_B
 		# Generated Image Disc Output should be close to zero
-		self.fake_B = self.fake_pool.query(fakeB.detach())
-		self.real_B = self.real_pool.query(realB)
+		self.fake_B = fakeB.detach()
+		self.real_B = realB
 		self.pred_fake = net.forward(fakeB.detach())
+		self.fake_pool.add(self.pred_fake)
 
 		# Real
 		self.pred_real = net.forward(realB)
+		self.real_pool.add(self.pred_real)
 
 		# Combined loss
-		self.loss_D = (self.criterionGAN(self.pred_real - torch.mean(net.forward(self.fake_B)), 1) +
-					   self.criterionGAN(self.pred_fake - torch.mean(net.forward(self.real_B)), 0)) / 2
+		self.loss_D = (self.criterionGAN(self.pred_real - torch.mean(self.fake_pool.query()), 1) +
+					   self.criterionGAN(self.pred_fake - torch.mean(self.real_pool.query()), 0)) / 2
 		return self.loss_D
 
 	def __call__(self, net, fakeB, realB):
@@ -183,8 +185,8 @@ class RelativisticDiscLossLS(nn.Module):
 
 		# Real
 		self.pred_real = net.forward(realB)
-		errG = (torch.mean((self.pred_real - torch.mean(net.forward(self.fake_B)) + 1) ** 2) +
-				torch.mean((self.pred_fake - torch.mean(net.forward(self.real_B)) - 1) ** 2)) / 2
+		errG = (torch.mean((self.pred_real - torch.mean(self.fake_pool.query()) + 1) ** 2) +
+				torch.mean((self.pred_fake - torch.mean(self.real_pool.query()) - 1) ** 2)) / 2
 		return errG
 
 	def get_loss(self, net, fakeB, realB):
@@ -194,13 +196,15 @@ class RelativisticDiscLossLS(nn.Module):
 		self.fake_B = fakeB.detach()
 		self.real_B = realB
 		self.pred_fake = net.forward(fakeB.detach())
+		self.fake_pool.add(self.pred_fake)
 
 		# Real
 		self.pred_real = net.forward(realB)
+		self.real_pool.add(self.pred_real)
 
 		# Combined loss
-		self.loss_D = (torch.mean((self.pred_real - torch.mean(net.forward(self.fake_B)) - 1) ** 2) +
-					   torch.mean((self.pred_fake - torch.mean(net.forward(self.real_B)) + 1) ** 2)) / 2
+		self.loss_D = (torch.mean((self.pred_real - torch.mean(self.fake_pool.query()) - 1) ** 2) +
+					   torch.mean((self.pred_fake - torch.mean(self.real_pool.query()) + 1) ** 2)) / 2
 		return self.loss_D
 
 	def __call__(self, net, fakeB, realB):

@@ -43,8 +43,6 @@ class UnalignedDataset(BaseDataset):
                 ShiftScaleRotate(shift_limit=0.0, scale_limit=0.2, rotate_limit=20, p=.4),
                 OneOf([
                     CLAHE(clip_limit=2),
-                    IAASharpen(),
-                    IAAEmboss(),
                     RandomContrast(),
                     RandomBrightness(),
                     RandomGamma()

@@ -8,6 +8,7 @@ import logging
 
 REPORT_EACH = 100
 
+
 class MetricCounter():
     def __init__(self, exp_name):
         super(MetricCounter, self).__init__()
@@ -45,8 +46,8 @@ class MetricCounter():
         self.writer.add_scalar('{}_G_Loss'.format(scalar_prefix), np.mean(self.G_loss), epoch_num)
         self.writer.add_scalar('{}_D_Loss'.format(scalar_prefix), np.mean(self.D_loss), epoch_num)
         self.writer.add_scalar('{}_G_Loss_content'.format(scalar_prefix), np.mean(self.content_loss), epoch_num)
-        self.writer.add_scalar('{}_SSIM'.format(scalar_prefix), np.mean(self.psnr), epoch_num)
-        self.writer.add_scalar('{}_PSNR'.format(scalar_prefix), np.mean(self.ssim), epoch_num)
+        self.writer.add_scalar('{}_SSIM'.format(scalar_prefix), np.mean(self.ssim), epoch_num)
+        self.writer.add_scalar('{}_PSNR'.format(scalar_prefix), np.mean(self.psnr), epoch_num)
 
     def update_best_model(self):
         cur_metric = np.mean(self.psnr)

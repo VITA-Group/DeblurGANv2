@@ -37,10 +37,10 @@ class NoAdversarialTrainer(AdversarialTrainer):
         AdversarialTrainer.__init__(self, netD, criterion)
 
     def lossD(self, pred, gt):
-        return 0
+        return [0]
 
     def lossG(self, pred, gt):
-        return 0
+        return [0]
 
     def get_params(self):
         return [torch.nn.Parameter(torch.Tensor(1))]

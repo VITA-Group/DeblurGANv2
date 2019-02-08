@@ -66,7 +66,7 @@ class Trainer(object):
 			loss_G = loss_content + self.adv_lambda * loss_adv
 			loss_G.backward()
 			self.optimizer_G.step()
-			self.metric_counter.add_losses(loss_G.item(), loss_D[0], loss_content.item())
+			self.metric_counter.add_losses(loss_G.item(), loss_D, loss_content.item())
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets)
 			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
 			tq.set_postfix(loss=self.metric_counter.loss_message())
@@ -97,12 +97,12 @@ class Trainer(object):
 
 	def _update_d(self, outputs, targets):
 		if self.config['model']['d_name'] == 'no_gan':
-			return [0]
+			return 0
 		self.optimizer_D.zero_grad()
 		loss_D = self.adv_lambda * self.adv_trainer.lossD(outputs, targets)
 		loss_D.backward(retain_graph=True)
 		self.optimizer_D.step()
-		return loss_D
+		return loss_D.item()
 
 	def _get_optim(self, params):
 		if self.config['optimizer']['name'] == 'adam':

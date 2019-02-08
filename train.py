@@ -66,7 +66,7 @@ class Trainer(object):
 			loss_G = loss_content + self.adv_lambda * loss_adv
 			loss_G.backward()
 			self.optimizer_G.step()
-			self.metric_counter.add_losses(loss_G.item(), loss_D, loss_content.item())
+			self.metric_counter.add_losses(loss_G.item(), loss_content.item(), loss_D)
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets)
 			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
 			tq.set_postfix(loss=self.metric_counter.loss_message())
@@ -81,11 +81,10 @@ class Trainer(object):
 		for data in tq:
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
-			loss_D = self.adv_lambda * self.adv_trainer.lossD(outputs, targets)
 			loss_content = self.criterionG(outputs, targets)
 			loss_adv = self.adv_trainer.lossG(outputs, targets)
 			loss_G = loss_content + self.adv_lambda * loss_adv
-			self.metric_counter.add_losses(loss_G.item(), loss_D[0], loss_content.item())
+			self.metric_counter.add_losses(loss_G.item(), loss_content.item())
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets, full=True)
 			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
 		tq.close()

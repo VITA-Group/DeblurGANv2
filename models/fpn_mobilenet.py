@@ -17,7 +17,7 @@ class FPNHead(nn.Module):
 
 class FPNMobileNet(nn.Module):
 
-    def __init__(self, norm_layer, output_ch=3, num_filters=128, num_filters_fpn=128, pretrained=True):
+    def __init__(self, norm_layer, output_ch=3, num_filters=128, num_filters_fpn=256, pretrained=True):
         super().__init__()
 
         # Feature Pyramid Network (FPN) with four feature maps of resolutions
@@ -59,8 +59,8 @@ class FPNMobileNet(nn.Module):
         map1 = nn.functional.upsample(self.head1(map1), scale_factor=1, mode="nearest")
 
         smoothed = self.smooth(torch.cat([map4, map3, map2, map1], dim=1))
-        smoothed = nn.functional.upsample(smoothed, scale_factor=2, mode="nearest")
-        smoothed = self.smooth2(smoothed + map0)
+        smoothed = nn.functional.upsample(smoothed + map0 , scale_factor=2, mode="nearest")
+        smoothed = self.smooth2(smoothed)
         smoothed = nn.functional.upsample(smoothed, scale_factor=2, mode="nearest")
 
         final = self.final(smoothed)
@@ -71,7 +71,7 @@ class FPNMobileNet(nn.Module):
 
 class FPN(nn.Module):
 
-    def __init__(self, num_filters=128, pretrained=True):
+    def __init__(self, num_filters=256, pretrained=True):
         """Creates an `FPN` instance for feature extraction.
         Args:
           num_filters: the number of filters in each output pyramid level
@@ -79,35 +79,25 @@ class FPN(nn.Module):
         """
 
         super().__init__()
+        #pretrain = None
         net = MobileNetV2(n_class=1000)
-
-        if pretrained:
-            #Load weights into the project directory
-            state_dict = torch.load('mobilenetv2.pth.tar') # add map_location='cpu' if no gpu
-            net.load_state_dict(state_dict)
+        #state_dict = torch.load('mobilenetv2.pth.tar') # add map_location='cpu' if no gpu
+        #net.load_state_dict(state_dict)
         self.features = net.features
+        print(self.features)
+        print(len(self.features))
 
-        self.enc0 = nn.Sequential(*self.features[0:2])
-        self.enc1 = nn.Sequential(*self.features[2:4])
-        self.enc2 = nn.Sequential(*self.features[4:7])
-        self.enc3 = nn.Sequential(*self.features[7:11])
-        self.enc4 = nn.Sequential(*self.features[11:16])
+        self.enc0 = self.features.layer0
+        self.enc1 = self.features.layer1  # 256
+        self.enc2 = self.features.layer2  # 512
+        self.enc3 = self.features.layer3  # 1024
+        self.enc4 = self.features.layer4  # 2048
 
-        self.td1 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
-        self.td2 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
-        self.td3 = nn.Sequential(nn.Conv2d(num_filters, num_filters, kernel_size=3, padding=1),
-                                 norm_layer(num_filters),
-                                 nn.ReLU(inplace=True))
-
-        self.lateral4 = nn.Conv2d(160, num_filters, kernel_size=1, bias=False)
-        self.lateral3 = nn.Conv2d(64, num_filters, kernel_size=1, bias=False)
-        self.lateral2 = nn.Conv2d(32, num_filters, kernel_size=1, bias=False)
-        self.lateral1 = nn.Conv2d(24, num_filters, kernel_size=1, bias=False)
-        self.lateral0 = nn.Conv2d(16, num_filters // 2, kernel_size=1, bias=False)
+        self.lateral4 = nn.Conv2d(2048, num_filters, kernel_size=1, bias=False)
+        self.lateral3 = nn.Conv2d(1024, num_filters, kernel_size=1, bias=False)
+        self.lateral2 = nn.Conv2d(512, num_filters, kernel_size=1, bias=False)
+        self.lateral1 = nn.Conv2d(256, num_filters, kernel_size=1, bias=False)
+        self.lateral0 = nn.Conv2d(64, num_filters // 2, kernel_size=1, bias=False)
 
         for param in self.features.parameters():
             param.requires_grad = False
@@ -139,9 +129,9 @@ class FPN(nn.Module):
         lateral0 = self.lateral0(enc0)
 
         # Top-down pathway
-        map4 = lateral4
-        map3 = self.td1(lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest"))
-        map2 = self.td2(lateral2 + nn.functional.upsample(map3, scale_factor=2, mode="nearest"))
-        map1 = self.td3(lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest"))
-        return lateral0, map1, map2, map3, map4
 
+        map4 = lateral4
+        map3 = lateral3 + nn.functional.upsample(map4, scale_factor=2, mode="nearest")
+        map2 = lateral2 + nn.functional.upsample(map3, scale_factor=2, mode="nearest")
+        map1 = lateral1 + nn.functional.upsample(map2, scale_factor=2, mode="nearest")
+        return lateral0, map1, map2, map3, map4

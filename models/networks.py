@@ -4,7 +4,7 @@ from torch.nn import init
 import functools
 from torch.autograd import Variable
 import numpy as np
-from models.fpn import FPNNet
+from models.fpn_mobilenet import FPNMobileNet
 from models.fpn_inception import FPNInception
 from models.fpn_inception_simple import FPNInceptionSimple
 from models.unet_seresnext import UNetSEResNext
@@ -269,15 +269,14 @@ def get_fullD(model_config):
     return model_d
 
 
-def get_nets(model_config):
-    generator_name = model_config['g_name']
+def get_generator(generator_name):
     if generator_name == 'resnet':
         model_g = ResnetGenerator(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
                                   use_dropout=model_config['dropout'],
                                   n_blocks=model_config['blocks'],
                                   learn_residual=model_config['learn_residual'])
-    elif generator_name == 'fpn':
-        model_g = FPNNet(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
+    elif generator_name == 'fpn_mobilenet':
+        model_g = FPNMobileNet(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
                          pretrained=model_config['pretrained'])
     elif generator_name == 'fpn_inception':
         model_g = FPNInception(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
@@ -291,7 +290,10 @@ def get_nets(model_config):
     else:
         raise ValueError("Generator Network [%s] not recognized." % generator_name)
 
-    discriminator_name = model_config['d_name']
+    return nn.DataParallel(model_g)
+
+
+def get_discriminator(discriminator_name):
     if discriminator_name == 'no_gan':
         model_d = None
     elif discriminator_name == 'patch_gan':
@@ -314,4 +316,8 @@ def get_nets(model_config):
     else:
         raise ValueError("Discriminator Network [%s] not recognized." % discriminator_name)
 
-    return nn.DataParallel(model_g), model_d
+    return model_d
+
+
+def get_nets(model_config):
+    return get_generator(model_config['g_name']), get_discriminator(model_config['d_name'])

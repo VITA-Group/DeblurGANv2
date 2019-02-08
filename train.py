@@ -14,6 +14,7 @@ from models.networks import get_nets
 from models.losses import get_loss
 from models.models import get_model
 from metric_counter import MetricCounter
+from adversarial_trainer import AdversarialTrainerFactory
 cv2.setNumThreads(0)
 
 class Trainer(object):
@@ -30,7 +31,7 @@ class Trainer(object):
 		for epoch in range(0, config['num_epochs']):
 			if (epoch == self.warmup_epochs) and not(self.warmup_epochs == 0):
 				self.netG.module.unfreeze()
-				self.optimizer_G = self._get_optim(self.netG)
+				self.optimizer_G = self._get_optim(self.netG.parameters())
 				self.scheduler_G = self._get_scheduler(self.optimizer_G)
 			self._run_epoch(epoch)
 			self._validate(epoch)
@@ -58,18 +59,14 @@ class Trainer(object):
 		for data in tq:
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
-			self.optimizer_D.zero_grad()
-			loss_D = self.adv_lambda * self.criterionD(self.netD, outputs, targets)
-			loss_D.backward(retain_graph=True)
-			self.optimizer_D.step()
-
+			loss_D = self._update_d(outputs, targets)
 			self.optimizer_G.zero_grad()
 			loss_content = self.criterionG(outputs, targets)
-			loss_adv = self.criterionD.get_g_loss(self.netD, outputs, targets)
+			loss_adv = self.adv_trainer.lossG(outputs, targets)
 			loss_G = loss_content + self.adv_lambda * loss_adv
 			loss_G.backward()
 			self.optimizer_G.step()
-			self.metric_counter.add_losses(loss_G.item(), loss_D.item(), loss_content.item(), loss_adv.item())
+			self.metric_counter.add_losses(loss_G.item(), loss_D[0], loss_content.item())
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets)
 			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
 			tq.set_postfix(loss=self.metric_counter.loss_message())
@@ -84,11 +81,11 @@ class Trainer(object):
 		for data in tq:
 			inputs, targets = self.model.get_input(data)
 			outputs = self.netG(inputs)
-			loss_D = self.adv_lambda * self.criterionD(self.netD, outputs, targets)
+			loss_D = self.adv_lambda * self.adv_trainer.lossD(outputs, targets)
 			loss_content = self.criterionG(outputs, targets)
-			loss_adv = self.criterionD.get_g_loss(self.netD, outputs, targets)
+			loss_adv = self.adv_trainer.lossG(outputs, targets)
 			loss_G = loss_content + self.adv_lambda * loss_adv
-			self.metric_counter.add_losses(loss_G.item(), loss_D.item(), loss_content.item(), loss_adv.item())
+			self.metric_counter.add_losses(loss_G.item(), loss_D[0], loss_content.item())
 			curr_psnr, curr_ssim = self.model.get_acc(outputs, targets, full=True)
 			self.metric_counter.add_metrics(curr_psnr, curr_ssim)
 		tq.close()
@@ -98,14 +95,22 @@ class Trainer(object):
 		data_loader = CreateDataLoader(config, filename)
 		return data_loader.load_data()
 
-	def _get_optim(self, model, disc=False):
-		lr_multiplier = 2.0 if disc is True else 1.0
+	def _update_d(self, outputs, targets):
+		if self.config['model']['d_name'] == 'no_gan':
+			return [0]
+		self.optimizer_D.zero_grad()
+		loss_D = self.adv_lambda * self.adv_trainer.lossD(outputs, targets)
+		loss_D.backward(retain_graph=True)
+		self.optimizer_D.step()
+		return loss_D
+
+	def _get_optim(self, params):
 		if self.config['optimizer']['name'] == 'adam':
-			optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=self.config['optimizer']['lr'] * lr_multiplier)
+			optimizer = optim.Adam(params, lr=self.config['optimizer']['lr'])
 		elif self.config['optimizer']['name'] == 'sgd':
-			optimizer = optim.SGD(filter(lambda p: p.requires_grad, model.parameters()), lr=self.config['optimizer']['lr'] * lr_multiplier)
+			optimizer = optim.SGD(params, lr=self.config['optimizer']['lr'])
 		elif self.config['optimizer']['name'] == 'adadelta':
-			optimizer = optim.Adadelta(filter(lambda p: p.requires_grad, model.parameters()), lr=self.config['optimizer']['lr'] * lr_multiplier)
+			optimizer = optim.Adadelta(params, lr=self.config['optimizer']['lr'])
 		else:
 			raise ValueError("Optimizer [%s] not recognized." % self.config['optimizer']['name'])
 		return optimizer
@@ -128,14 +133,24 @@ class Trainer(object):
 			raise ValueError("Scheduler [%s] not recognized." % self.config['scheduler']['name'])
 		return scheduler
 
+	def _get_adversarial_trainer(self, D_name, netD, criterionD):
+		if D_name == 'no_gan':
+			return AdversarialTrainerFactory.createModel('NoAdversarialTrainer')
+		elif D_name == 'patch_gan' or D_name == 'multi_scale':
+			return AdversarialTrainerFactory.createModel('SingleAdversarialTrainer', netD, criterionD)
+		elif D_name == 'double_gan':
+			return AdversarialTrainerFactory.createModel('DoubleAdversarialTrainer', netD, criterionD)
+		else:
+			raise ValueError("Discriminator Network [%s] not recognized." % D_name)
+
 	def _init_params(self):
-		self.netG, self.netD = get_nets(self.config['model'])
+		self.criterionG, criterionD = get_loss(self.config['model'])
+		self.netG, netD = get_nets(self.config['model'])
 		self.netG.cuda()
-		self.netD.cuda()
+		self.adv_trainer = self._get_adversarial_trainer(self.config['model']['d_name'], netD, criterionD)
 		self.model = get_model(self.config['model'])
-		self.criterionG, self.criterionD = get_loss(self.config['model'])
-		self.optimizer_G = self._get_optim(self.netG)
-		self.optimizer_D = self._get_optim(self.netD)
+		self.optimizer_G = self._get_optim(filter(lambda p: p.requires_grad, self.netG.parameters()))
+		self.optimizer_D = self._get_optim(self.adv_trainer.get_params())
 		self.scheduler_G = self._get_scheduler(self.optimizer_G)
 		self.scheduler_D = self._get_scheduler(self.optimizer_D)
 

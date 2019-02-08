@@ -24,10 +24,10 @@ class MetricCounter():
         self.psnr = []
         self.ssim = []
 
-    def add_losses(self, l_G, l_D, l_content, l_adv):
+    def add_losses(self, l_G, l_D, l_content):
         self.G_loss.append(l_G)
         self.content_loss.append(l_content)
-        self.adv_loss.append(l_adv)
+        self.adv_loss.append(l_G - l_content)
         self.D_loss.append(l_D)
 
     def add_metrics(self, psnr, ssim):
@@ -42,12 +42,11 @@ class MetricCounter():
 
     def write_to_tensorboard(self, epoch_num, validation=False):
         scalar_prefix = 'Validation' if validation else 'Train'
-        writer.add_scalar('{}_G_Loss'.format(scalar_prefix), np.mean(self.G_loss), epoch_num)
-        writer.add_scalar('{}_D_Loss'.format(scalar_prefix), np.mean(self.D_loss), epoch_num)
-        writer.add_scalar('{}_G_Loss_content'.format(scalar_prefix), np.mean(self.content_loss), epoch_num)
-        writer.add_scalar('{}_G_Loss_adv'.format(scalar_prefix), np.mean(self.adv_loss), epoch_num)
-        writer.add_scalar('{}_SSIM'.format(scalar_prefix), np.mean(self.psnr), epoch_num)
-        writer.add_scalar('{}_PSNR'.format(scalar_prefix), np.mean(self.ssim), epoch_num)
+        self.writer.add_scalar('{}_G_Loss'.format(scalar_prefix), np.mean(self.G_loss), epoch_num)
+        self.writer.add_scalar('{}_D_Loss'.format(scalar_prefix), np.mean(self.D_loss), epoch_num)
+        self.writer.add_scalar('{}_G_Loss_content'.format(scalar_prefix), np.mean(self.content_loss), epoch_num)
+        self.writer.add_scalar('{}_SSIM'.format(scalar_prefix), np.mean(self.psnr), epoch_num)
+        self.writer.add_scalar('{}_PSNR'.format(scalar_prefix), np.mean(self.ssim), epoch_num)
 
     def update_best_model(self):
         cur_metric = np.mean(self.psnr)

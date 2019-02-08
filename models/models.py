@@ -12,6 +12,7 @@ from PIL import Image
 import cv2
 import os
 
+
 class DeblurModel(nn.Module):
     def __init__(self):
         super(DeblurModel, self).__init__()
@@ -21,7 +22,6 @@ class DeblurModel(nn.Module):
         inputs = img
         targets = data['B']
         inputs, targets = inputs.cuda(), targets.cuda()
-        inputs, targets = Variable(inputs), Variable(targets)
         return inputs, targets
 
     def tensor2im(self, image_tensor, imtype=np.uint8):
@@ -29,13 +29,14 @@ class DeblurModel(nn.Module):
         image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
         return image_numpy.astype(imtype)
 
-    def get_acc(self, output, target, full=False):
+    def get_acc(self, output, target):
         fake = self.tensor2im(output.data)
         real = self.tensor2im(target.data)
         psnr = PSNR(fake, real)
         ssim = SSIM(fake, real, multichannel=True)
 
         return psnr, ssim
+
 
 def get_model(model_config):
     return DeblurModel()

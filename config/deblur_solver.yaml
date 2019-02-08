@@ -8,7 +8,7 @@ warmup_num: 3
 model:
     g_name: fpn_inception
     blocks: 9
-    d_name: n_layers
+    d_name: patch_gan
     d_layers: 3
     content_loss: perceptual
     adv_lambda: 0.001

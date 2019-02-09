@@ -22,7 +22,7 @@ batch_size: 1
 image_size: [256, 256]
 fineSize: 256
 dataset: 
-    mode: unaligned
+    task: deblur
 optimizer: 
     name: adam
     lr: 0.0001

@@ -2,7 +2,7 @@ from __future__ import print_function
 import shutil
 import torch
 import torch.optim as optim
-from data.data_loader import CreateDataLoader
+from data.data_loader import CustomDataLoader
 import tqdm
 import cv2
 import os
@@ -92,8 +92,7 @@ class Trainer(object):
 		self.metric_counter.write_to_tensorboard(epoch, validation=True)
 
 	def _get_dataset(self, config, filename):
-		data_loader = CreateDataLoader(config, filename)
-		return data_loader.load_data()
+		return CustomDataLoader(config, filename)
 
 	def _update_d(self, outputs, targets):
 		if self.config['model']['d_name'] == 'no_gan':

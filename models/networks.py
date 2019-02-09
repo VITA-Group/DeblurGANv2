@@ -277,7 +277,7 @@ def get_generator(model_config):
                                   learn_residual=model_config['learn_residual'])
     elif generator_name == 'fpn_mobilenet':
         model_g = FPNMobileNet(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
-                         pretrained=model_config['pretrained'])
+                               pretrained=model_config['pretrained'])
     elif generator_name == 'fpn_inception':
         model_g = FPNInception(norm_layer=get_norm_layer(norm_type=model_config['norm_layer']))
     elif generator_name == 'fpn_inception_simple':
@@ -304,8 +304,8 @@ def get_discriminator(model_config):
         model_d = nn.DataParallel(model_d)
     elif discriminator_name == 'double_gan':
         patch_gan = NLayerDiscriminator(n_layers=model_config['d_layers'],
-                                      norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
-                                      use_sigmoid=False)
+                                        norm_layer=get_norm_layer(norm_type=model_config['norm_layer']),
+                                        use_sigmoid=False)
         patch_gan = nn.DataParallel(patch_gan)
         full_gan = get_fullD(model_config)
         full_gan = nn.DataParallel(full_gan)

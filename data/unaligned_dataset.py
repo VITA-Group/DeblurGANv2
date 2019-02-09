@@ -13,6 +13,7 @@ import random
 import cv2
 from albumentations import *
 
+
 class UnalignedDataset(BaseDataset):
     def initialize(self, config, filename):
         self.config = config

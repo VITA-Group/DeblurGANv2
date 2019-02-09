@@ -4,7 +4,7 @@ import pathlib
 import torch
 import numpy as np
 import torchvision.transforms as transforms
-from data.base_dataset import BaseDataset, get_transform
+import torch.utils.data as data
 from data.image_folder import make_dataset, make_dataset_several
 from PIL import Image
 import PIL
@@ -14,32 +14,28 @@ import cv2
 from albumentations import *
 
 
-class UnalignedDataset(BaseDataset):
-    def initialize(self, config, filename):
+class DeblurDataset(data.Dataset):
+    def __init__(self, config, filename):
+        super(data.Dataset, self).__init__()
+
         self.config = config
         self.filename = filename
         self.root = config['dataroot_train']
 
-        subfolders = os.listdir(os.path.join(self.root, filename, 'blur'))
-        subfolders_slice = subfolders
-        self.dirs_A = [os.path.join(self.root, filename, 'blur', subfolder) for subfolder in subfolders_slice]
-
-        def change_subpath(path, what_to_change, change_to):
-            p = pathlib.Path(path)
-            index = p.parts.index(what_to_change)
-            new_path = (pathlib.Path.cwd().joinpath(*p.parts[:index])).joinpath(pathlib.Path(change_to), *p.parts[index+1:])
-            return new_path
-
-        self.A_paths = make_dataset_several(self.dirs_A)
-        self.B_paths = [str(change_subpath(x, 'blur', 'sharp')) for x in self.A_paths]
-
-        self.A_paths = sorted(self.A_paths)
-        self.B_paths = sorted(self.B_paths)
+        self.A_paths, self.B_paths = self.get_paths()
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
 
-        if filename == 'train':
-            self.transform = Compose([
+        self.transform = self.get_augmentations(filename == 'train')
+
+        self.norm = Compose([Normalize(
+            mean=[0.5, 0.5, 0.5],
+            std=[0.5, 0.5, 0.5],
+        )])
+
+    def get_augmentations(self, train):
+        if train:
+            return Compose([
                 HorizontalFlip(),
                 ShiftScaleRotate(shift_limit=0.0, scale_limit=0.2, rotate_limit=20, p=.4),
                 OneOf([
@@ -55,14 +51,28 @@ class UnalignedDataset(BaseDataset):
                 RandomCrop(self.config['fineSize'], self.config['fineSize'])
             ], additional_targets={'image2': 'image'})
         else:
-            self.transform = Compose([
+            return Compose([
                 CenterCrop(self.config['fineSize'], self.config['fineSize'])
             ], additional_targets={'image2': 'image'})
 
-        self.norm = Compose([Normalize(
-            mean=[0.5, 0.5, 0.5],
-            std=[0.5, 0.5, 0.5],
-        )])
+    def get_paths(self):
+        subfolders = os.listdir(os.path.join(self.root, self.filename, 'blur'))
+        subfolders_slice = subfolders
+        self.dirs_A = [os.path.join(self.root, self.filename, 'blur', subfolder) for subfolder in subfolders_slice]
+
+        def change_subpath(path, what_to_change, change_to):
+            p = pathlib.Path(path)
+            index = p.parts.index(what_to_change)
+            new_path = (pathlib.Path.cwd().joinpath(*p.parts[:index])).joinpath(pathlib.Path(change_to),
+                                                                                *p.parts[index + 1:])
+            return new_path
+
+        self.A_paths = make_dataset_several(self.dirs_A)
+        self.B_paths = [str(change_subpath(x, 'blur', 'sharp')) for x in self.A_paths]
+
+        self.A_paths = sorted(self.A_paths)
+        self.B_paths = sorted(self.B_paths)
+        return sorted(self.A_paths), sorted(self.B_paths)
 
     def __getitem__(self, index):
         A_path = self.A_paths[index % self.A_size]
@@ -85,4 +95,4 @@ class UnalignedDataset(BaseDataset):
         return max(self.A_size, self.B_size)
 
     def name(self):
-        return 'UnalignedDataset'
+        return 'DeblurDataset'

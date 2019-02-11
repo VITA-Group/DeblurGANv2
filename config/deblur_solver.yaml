@@ -1,7 +1,7 @@
 ---
 project: deblur_gan
 experiment_desc: fpn
-dataroot_train: /mnt/disks/GOPRO_3840
+dataroot_train: /home/arseny/datasets/train/
 dataroot_val: /mnt/disks/GOPRO_3840
 phase: train
 warmup_num: 3
@@ -17,12 +17,12 @@ model:
     norm_layer: instance
     dropout: True  
 num_epochs: 100
-num_workers: 4
+num_workers: 8
 batch_size: 1
 image_size: [256, 256]
 fineSize: 256
 dataset: 
-    task: deblur
+    task: dehaze
 optimizer: 
     name: adam
     lr: 0.0001

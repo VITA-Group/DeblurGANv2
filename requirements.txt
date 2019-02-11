@@ -8,6 +8,5 @@ albumentations
 scikit-image
 tqdm
 glog
-tensorboardx
-fire
+
 # this file is not ready yet

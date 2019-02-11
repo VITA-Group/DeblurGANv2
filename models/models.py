@@ -1,26 +1,18 @@
-import torch.nn as nn
-import torch
-import torch.nn.functional as F
-import torchvision.models as models
-from torch.autograd import Variable
-import torchvision.utils as vutils
-import torchvision.transforms as transforms
 import numpy as np
-from util.metrics import PSNR
+import torch.nn as nn
 from skimage.measure import compare_ssim as SSIM
-from PIL import Image
-import cv2
-import os
+
+from util.metrics import PSNR
 
 
-class DeblurModel(nn.Module):
+class DeblurModel(nn.Module):2
     def __init__(self):
         super(DeblurModel, self).__init__()
 
     def get_input(self, data):
-        img = data['A']
+        img = data['a']
         inputs = img
-        targets = data['B']
+        targets = data['a']
         inputs, targets = inputs.cuda(), targets.cuda()
         return inputs, targets
 
@@ -40,4 +32,3 @@ class DeblurModel(nn.Module):
 
 def get_model(model_config):
     return DeblurModel()
-

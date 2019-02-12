@@ -5,14 +5,14 @@ from skimage.measure import compare_ssim as SSIM
 from util.metrics import PSNR
 
 
-class DeblurModel(nn.Module):2
+class DeblurModel(nn.Module):
     def __init__(self):
         super(DeblurModel, self).__init__()
 
     def get_input(self, data):
         img = data['a']
         inputs = img
-        targets = data['a']
+        targets = data['b']
         inputs, targets = inputs.cuda(), targets.cuda()
         return inputs, targets
 

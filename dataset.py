@@ -88,7 +88,6 @@ class PairedDataset(Dataset):
 
     @staticmethod
     def _preprocess(img):
-        img = img.astype('float32') / 255
         img = np.transpose(img, (2, 0, 1))
         return img
 

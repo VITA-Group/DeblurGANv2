@@ -162,13 +162,8 @@ if __name__ == '__main__':
     batch_size = config.pop('batch_size')
     get_dataloader = partial(DataLoader, batch_size=batch_size, num_workers=cpu_count(), shuffle=True, drop_last=True)
 
-    from glog import logger
-
     datasets = map(config.pop, ('train', 'val'))
-    try:
-        datasets = map(PairedDataset.from_config, datasets)
-    except:
-        logger.exception('kzl')
+    datasets = map(PairedDataset.from_config, datasets)
     train, val = map(get_dataloader, datasets)
 
     trainer = Trainer(config, train=train, val=val)

@@ -1,5 +1,7 @@
-from torch.optim import lr_scheduler
 import math
+
+from torch.optim import lr_scheduler
+
 
 class WarmRestart(lr_scheduler.CosineAnnealingLR):
     """This class implements Stochastic Gradient Descent with Warm Restarts(SGDR): https://arxiv.org/abs/1608.03983.
@@ -55,4 +57,3 @@ class LinearDecay(lr_scheduler._LRScheduler):
             return self.base_lrs
         return [base_lr - ((base_lr - self.min_lr) / self.num_epochs) * (self.last_epoch - self.start_epoch) for
                 base_lr in self.base_lrs]
-

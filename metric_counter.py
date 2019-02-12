@@ -1,54 +1,40 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.autograd import Variable
+import logging
+from collections import defaultdict
+
 import numpy as np
 from tensorboardX import SummaryWriter
-import logging
 
-REPORT_EACH = 100
+WINDOW_SIZE = 100
 
 
-class MetricCounter():
+class MetricCounter:
     def __init__(self, exp_name):
-        super(MetricCounter, self).__init__()
         self.writer = SummaryWriter(exp_name)
         logging.basicConfig(filename='{}.log'.format(exp_name), level=logging.DEBUG)
-        self.clear()
+        self.metrics = defaultdict(list)
         self.best_metric = 0
 
     def clear(self):
-        self.G_loss = []
-        self.D_loss = []
-        self.content_loss = []
-        self.adv_loss = []
-        self.psnr = []
-        self.ssim = []
+        self.metrics = defaultdict(list)
 
     def add_losses(self, l_G, l_content, l_D=0):
-        self.G_loss.append(l_G)
-        self.content_loss.append(l_content)
-        self.adv_loss.append(l_G - l_content)
-        self.D_loss.append(l_D)
+        for name, value in zip(('G_loss', 'G_loss_content', 'G_loss_adv', 'D_loss'),
+                               (l_G, l_content, l_G - l_content, l_D)):
+            self.metrics[name].append(value)
 
     def add_metrics(self, psnr, ssim):
-        self.psnr.append(psnr)
-        self.ssim.append(ssim)
+        for name, value in zip(('PSNR', 'SSIM'),
+                               (psnr, ssim)):
+            self.metrics[name].append(value)
 
     def loss_message(self):
-        mean_loss = np.mean(self.G_loss[-REPORT_EACH:])
-        mean_psnr = np.mean(self.psnr[-REPORT_EACH:])
-        mean_ssim = np.mean(self.ssim[-REPORT_EACH:])
-        return '{:.3f}; psnr={}; ssim={}'.format(mean_loss, mean_psnr, mean_ssim)
+        metrics = ((k, np.mean(self.metrics[k][-WINDOW_SIZE:])) for k in ('G_loss', 'PSNR', 'SSIM'))
+        return '; '.join(map(lambda x: f'{x[0]}={x[1]:.4f}', metrics))
 
     def write_to_tensorboard(self, epoch_num, validation=False):
         scalar_prefix = 'Validation' if validation else 'Train'
-        self.writer.add_scalar('{}_G_Loss'.format(scalar_prefix), np.mean(self.G_loss), epoch_num)
-        self.writer.add_scalar('{}_D_Loss'.format(scalar_prefix), np.mean(self.D_loss), epoch_num)
-        self.writer.add_scalar('{}_G_Loss_adv'.format(scalar_prefix), np.mean(self.adv_loss), epoch_num)
-        self.writer.add_scalar('{}_G_Loss_content'.format(scalar_prefix), np.mean(self.content_loss), epoch_num)
-        self.writer.add_scalar('{}_SSIM'.format(scalar_prefix), np.mean(self.ssim), epoch_num)
-        self.writer.add_scalar('{}_PSNR'.format(scalar_prefix), np.mean(self.psnr), epoch_num)
+        for k in ('G_loss', 'D_loss', 'G_loss_adv', 'G_loss_content', 'SSIM', 'PSNR'):
+            self.writer.add_scalar(f'{scalar_prefix}_{k}', np.mean(self.metrics[k]), epoch_num)
 
     def update_best_model(self):
         cur_metric = np.mean(self.psnr)
@@ -56,5 +42,3 @@ class MetricCounter():
             self.best_metric = cur_metric
             return True
         return False
-
-

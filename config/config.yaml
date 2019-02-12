@@ -9,7 +9,7 @@ train:
   scope: strong
   crop: random
   preload: &PRELOAD true
-  preload_size: &PRELOAD_SIZE 1024
+  preload_size: &PRELOAD_SIZE 0
   bounds: [0, .9]
 val:
   files_a: *FILES_A

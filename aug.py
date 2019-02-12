@@ -25,7 +25,7 @@ def get_transforms(size: int, scope: str = 'weak', crop='random'):
     aug_fn = augs[scope]
     crop_fn = {'random': albu.RandomCrop(size, size),
                'center': albu.CenterCrop(size, size)}[crop]
-    normalize = albu.Normalize()
+    normalize = albu.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 
     pipeline = albu.Compose([aug_fn, crop_fn, normalize], additional_targets={'target': 'image'})
 

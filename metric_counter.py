@@ -37,7 +37,7 @@ class MetricCounter:
             self.writer.add_scalar(f'{scalar_prefix}_{k}', np.mean(self.metrics[k]), epoch_num)
 
     def update_best_model(self):
-        cur_metric = np.mean(self.psnr)
+        cur_metric = np.mean(self.metrics['PSNR'])
         if self.best_metric < cur_metric:
             self.best_metric = cur_metric
             return True

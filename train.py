@@ -136,11 +136,11 @@ class Trainer(object):
     @staticmethod
     def _get_adversarial_trainer(d_name, net_d, criterion_d):
         if d_name == 'no_gan':
-            return GANFactory.createModel('NoGAN')
-        elif d_name == 'patch_gan' or D_name == 'multi_scale':
-            return GANFactory.createModel('SingleGAN', net_d, criterion_d)
+            return GANFactory.create_model('NoGAN')
+        elif d_name == 'patch_gan' or d_name == 'multi_scale':
+            return GANFactory.create_model('SingleGAN', net_d, criterion_d)
         elif d_name == 'double_gan':
-            return GANFactory.createModel('DoubleGAN', net_d, criterion_d)
+            return GANFactory.create_model('DoubleGAN', net_d, criterion_d)
         else:
             raise ValueError("Discriminator Network [%s] not recognized." % d_name)
 

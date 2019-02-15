@@ -11,7 +11,7 @@ import yaml
 from joblib import cpu_count
 from torch.utils.data import DataLoader
 
-from adversarial_trainer import AdversarialTrainerFactory
+from adversarial_trainer import GANFactory
 from dataset import PairedDataset
 from metric_counter import MetricCounter
 from models.losses import get_loss
@@ -133,15 +133,16 @@ class Trainer(object):
             raise ValueError("Scheduler [%s] not recognized." % self.config['scheduler']['name'])
         return scheduler
 
-    def _get_adversarial_trainer(self, D_name, netD, criterionD):
-        if D_name == 'no_gan':
-            return AdversarialTrainerFactory.createModel('NoAdversarialTrainer')
-        elif D_name == 'patch_gan' or D_name == 'multi_scale':
-            return AdversarialTrainerFactory.createModel('SingleAdversarialTrainer', netD, criterionD)
-        elif D_name == 'double_gan':
-            return AdversarialTrainerFactory.createModel('DoubleAdversarialTrainer', netD, criterionD)
+    @staticmethod
+    def _get_adversarial_trainer(d_name, net_d, criterion_d):
+        if d_name == 'no_gan':
+            return GANFactory.createModel('NoGAN')
+        elif d_name == 'patch_gan' or D_name == 'multi_scale':
+            return GANFactory.createModel('SingleGAN', net_d, criterion_d)
+        elif d_name == 'double_gan':
+            return GANFactory.createModel('DoubleGAN', net_d, criterion_d)
         else:
-            raise ValueError("Discriminator Network [%s] not recognized." % D_name)
+            raise ValueError("Discriminator Network [%s] not recognized." % d_name)
 
     def _init_params(self):
         self.criterionG, criterionD = get_loss(self.config['model'])

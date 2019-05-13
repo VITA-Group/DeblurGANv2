@@ -12,7 +12,7 @@ from skimage.io import imread
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from aug import get_transforms
+from aug import get_corrupt_function, get_transforms
 
 
 def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_buckets=100, salt='', verbose=True):
@@ -52,6 +52,7 @@ class PairedDataset(Dataset):
                  files_a: Tuple[str],
                  files_b: Tuple[str],
                  transform: Callable,
+                 corrupt_fn: Optional[Callable] = None,
                  preload: bool = True,
                  preload_size: Optional[int] = 0,
                  verbose=True):
@@ -63,10 +64,14 @@ class PairedDataset(Dataset):
         self.data_b = files_b
         self.transform = transform
         self.verbose = verbose
+        self.corrupt_fn = corrupt_fn
 
         if preload:
             preload_fn = partial(self._bulk_preload, preload_size=preload_size)
-            self.data_a, self.data_b = map(preload_fn, (self.data_a, self.data_b))
+            if files_a == files_b:
+                self.data_a = self.data_b = preload_fn(self.data_a)
+            else:
+                self.data_a, self.data_b = map(preload_fn, (self.data_a, self.data_b))
             self.preload = True
 
     def _bulk_preload(self, data: Iterable[str], preload_size: int):
@@ -98,6 +103,8 @@ class PairedDataset(Dataset):
         a, b = self.data_a[idx], self.data_b[idx]
         if not self.preload:
             a, b = map(_read_img, (a, b))
+        if self.corrupt_fn is not None:
+            a = self.corrupt_fn(a)
         a, b = map(self._preprocess, self.transform(a, b))
         return {'a': a, 'b': b}
 
@@ -105,7 +112,7 @@ class PairedDataset(Dataset):
     def from_config(config):
         files_a, files_b = map(lambda x: sorted(glob(config[x], recursive=True)), ('files_a', 'files_b'))
         transform = get_transforms(size=config['size'], scope=config['scope'], crop=config['crop'])
-        # ToDo: make augmentations more customizible via transform
+        # ToDo: make augmentations more customizible via config
 
         hash_fn = hash_from_paths
         # ToDo: add more hash functions
@@ -117,9 +124,19 @@ class PairedDataset(Dataset):
 
         files_a, files_b = map(list, zip(*data))
 
+        corrupt_params = config.get('corrupt_fn')
+        if corrupt_params is not None:
+            corrupt_fn_name = corrupt_params.pop('name')
+            corrupt_fn = get_corrupt_function(corrupt_fn_name, **corrupt_params)
+            if corrupt_fn is not None:
+                logger.info(f'Using {corrupt_fn.func.__name__} for corruption')
+        else:
+            corrupt_fn = None
+
         return PairedDataset(files_a=files_a,
                              files_b=files_b,
                              preload=config['preload'],
                              preload_size=config['preload_size'],
+                             corrupt_fn=corrupt_fn,
                              transform=transform,
                              verbose=verbose)

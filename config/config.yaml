@@ -3,17 +3,22 @@ project: deblur_gan
 experiment_desc: fpn
 
 train:
-  files_a: &FILES_A /home/arseny/datasets/SIDD_Medium_Srgb/Data/*/*NOISY*.PNG
-  files_b: &FILES_B /home/arseny/datasets/SIDD_Medium_Srgb/Data/*/*GT*.PNG
+  files_a: &FILES_A /datasets/my_dataset/**/*.jpg
+  files_b: *FILES_A
   size: &SIZE 256
   scope: strong
   crop: random
   preload: &PRELOAD true
   preload_size: &PRELOAD_SIZE 0
   bounds: [0, .9]
+  corrupt_fn:
+    name: cutout
+    max_num_holes: 5
+    max_h: 10
+    max_w: 10
 val:
   files_a: *FILES_A
-  files_b: *FILES_B
+  files_b: *FILES_A
   size: *SIZE
   scope: weak
   crop: center
@@ -35,11 +40,9 @@ model:
   norm_layer: instance
   dropout: True
 num_epochs: 100
-batch_size: 8
+batch_size: 1
 image_size: [256, 256]
-fineSize: 256
-dataset:
-  task: dehaze
+
 optimizer:
   name: adam
   lr: 0.0001

@@ -1,4 +1,9 @@
+from functools import partial
+from typing import Optional
+
 import albumentations as albu
+import numpy as np
+from albumentations.augmentations import functional as F
 
 
 def get_transforms(size: int, scope: str = 'weak', crop='random'):
@@ -34,3 +39,30 @@ def get_transforms(size: int, scope: str = 'weak', crop='random'):
         return r['image'], r['target']
 
     return process
+
+
+def _cutout(img: np.ndarray, max_num_holes=3, max_h=7, max_w=7):
+    height, width, _ = img.shape
+    img = img.copy()
+
+    for _ in range(np.random.randint(1, max_num_holes)):
+        y = np.random.randint(height)
+        x = np.random.randint(width)
+
+        y1 = np.clip(y - max_h // 2, 0, height)
+        y2 = np.clip(y + max_h // 2, 0, height)
+        x1 = np.clip(x - max_w // 2, 0, width)
+        x2 = np.clip(x + max_w // 2, 0, width)
+
+        img[y1: y2, x1: x2] = 0
+    return img
+
+
+def get_corrupt_function(name: Optional[str], **kwargs):
+    if name is None:
+        return name
+    d = {'grayscale': F.to_gray,
+         'cutout': _cutout,
+         }
+    fn = partial(d[name], **kwargs)
+    return fn

@@ -63,7 +63,6 @@ class FPNInception(nn.Module):
         self.fpn.unfreeze()
 
     def forward(self, x):
-
         map0, map1, map2, map3, map4 = self.fpn(x)
 
         map4 = nn.functional.upsample(self.head4(map4), scale_factor=8, mode="nearest")

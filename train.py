@@ -165,6 +165,5 @@ if __name__ == '__main__':
     datasets = map(config.pop, ('train', 'val'))
     datasets = map(PairedDataset.from_config, datasets)
     train, val = map(get_dataloader, datasets)
-
     trainer = Trainer(config, train=train, val=val)
     trainer.train()

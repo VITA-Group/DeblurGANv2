@@ -1,12 +1,9 @@
-from functools import partial
-from typing import Optional
+from typing import List
 
 import albumentations as albu
-import numpy as np
-from albumentations.augmentations import functional as F
 
 
-def get_transforms(size: int, scope: str = 'weak', crop='random'):
+def get_transforms(size: int, scope: str = 'geometric', crop='random'):
     augs = {'strong': albu.Compose([albu.HorizontalFlip(),
                                     albu.ShiftScaleRotate(shift_limit=0.0, scale_limit=0.2, rotate_limit=20, p=.4),
                                     albu.ElasticTransform(),
@@ -25,14 +22,20 @@ def get_transforms(size: int, scope: str = 'weak', crop='random'):
                                     ]),
             'weak': albu.Compose([albu.HorizontalFlip(),
                                   ]),
+            'geometric': albu.OneOf([albu.HorizontalFlip(always_apply=True),
+                                     albu.ShiftScaleRotate(always_apply=True),
+                                     albu.Transpose(always_apply=True),
+                                     albu.OpticalDistortion(always_apply=True),
+                                     albu.ElasticTransform(always_apply=True),
+                                     ])
             }
 
     aug_fn = augs[scope]
-    crop_fn = {'random': albu.RandomCrop(size, size),
-               'center': albu.CenterCrop(size, size)}[crop]
-    normalize = albu.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    crop_fn = {'random': albu.RandomCrop(size, size, always_apply=True),
+               'center': albu.CenterCrop(size, size, always_apply=True)}[crop]
+    pad = albu.PadIfNeeded(size, size)
 
-    pipeline = albu.Compose([aug_fn, crop_fn, normalize], additional_targets={'target': 'image'})
+    pipeline = albu.Compose([aug_fn, crop_fn, pad], additional_targets={'target': 'image'})
 
     def process(a, b):
         r = pipeline(image=a, target=b)
@@ -41,28 +44,50 @@ def get_transforms(size: int, scope: str = 'weak', crop='random'):
     return process
 
 
-def _cutout(img: np.ndarray, max_num_holes=3, max_h=7, max_w=7):
-    height, width, _ = img.shape
-    img = img.copy()
+def get_normalize():
+    normalize = albu.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    normalize = albu.Compose([normalize], additional_targets={'target': 'image'})
 
-    for _ in range(np.random.randint(1, max_num_holes)):
-        y = np.random.randint(height)
-        x = np.random.randint(width)
+    def process(a, b):
+        r = normalize(image=a, target=b)
+        return r['image'], r['target']
 
-        y1 = np.clip(y - max_h // 2, 0, height)
-        y2 = np.clip(y + max_h // 2, 0, height)
-        x1 = np.clip(x - max_w // 2, 0, width)
-        x2 = np.clip(x + max_w // 2, 0, width)
-
-        img[y1: y2, x1: x2] = 0
-    return img
+    return process
 
 
-def get_corrupt_function(name: Optional[str], **kwargs):
-    if name is None:
-        return name
-    d = {'grayscale': F.to_gray,
-         'cutout': _cutout,
-         }
-    fn = partial(d[name], **kwargs)
-    return fn
+def _resolve_aug_fn(name):
+    d = {
+        'cutout': albu.Cutout,
+        'rgb_shift': albu.RGBShift,
+        'hsv_shift': albu.HueSaturationValue,
+        'motion_blur': albu.MotionBlur,
+        'median_blur': albu.MedianBlur,
+        'snow': albu.RandomSnow,
+        'shadow': albu.RandomShadow,
+        'fog': albu.RandomFog,
+        'brightness_contrast': albu.RandomBrightnessContrast,
+        'gamma': albu.RandomGamma,
+        'sun_flare': albu.RandomSunFlare,
+        'sharpen': albu.IAASharpen,
+        'jpeg': albu.JpegCompression,
+        'gray': albu.ToGray,
+        # ToDo: pixelize
+        # ToDo: partial gray
+    }
+    return d[name]
+
+
+def get_corrupt_function(config: List[dict]):
+    augs = []
+    for aug_params in config:
+        name = aug_params.pop('name')
+        cls = _resolve_aug_fn(name)
+        prob = aug_params.pop('p') if 'p' in aug_params else .5
+        augs.append(cls(p=prob, **aug_params))
+
+    augs = albu.OneOf(augs)
+
+    def process(x):
+        return augs(image=x)['image']
+
+    return process

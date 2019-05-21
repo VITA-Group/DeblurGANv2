@@ -11,20 +11,33 @@ train:
   preload: &PRELOAD true
   preload_size: &PRELOAD_SIZE 0
   bounds: [0, .9]
-  corrupt_fn:
-    name: cutout
-    max_num_holes: 5
-    max_h: 10
-    max_w: 10
+  scope: geometric
+  corrupt: &CORRUPT
+    - name: cutout
+      prob: 0.5
+      num_holes: 3
+      max_h_size: 25
+      max_w_size: 25
+    - name: jpeg
+      quality_lower: 70
+      quality_upper: 90
+    - name: motion_blur
+    - name: median_blur
+    - name: gamma
+    - name: rgb_shift
+    - name: hsv_shift
+    - name: sharpen
+
 val:
   files_a: *FILES_A
   files_b: *FILES_A
   size: *SIZE
-  scope: weak
+  scope: geometric
   crop: center
   preload: *PRELOAD
   preload_size: *PRELOAD_SIZE
   bounds: [.9, 1]
+  corrupt: *CORRUPT
 
 phase: train
 warmup_num: 3

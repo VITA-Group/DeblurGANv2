@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from functools import partial
 from glob import glob
 from hashlib import sha1
@@ -12,7 +13,7 @@ from skimage.io import imread
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from aug import get_corrupt_function, get_transforms
+import aug
 
 
 def subsample(data: Iterable, bounds: Tuple[float, float], hash_fn: Callable, n_buckets=100, salt='', verbose=True):
@@ -51,7 +52,8 @@ class PairedDataset(Dataset):
     def __init__(self,
                  files_a: Tuple[str],
                  files_b: Tuple[str],
-                 transform: Callable,
+                 transform_fn: Callable,
+                 normalize_fn: Callable,
                  corrupt_fn: Optional[Callable] = None,
                  preload: bool = True,
                  preload_size: Optional[int] = 0,
@@ -62,9 +64,11 @@ class PairedDataset(Dataset):
         self.preload = False
         self.data_a = files_a
         self.data_b = files_b
-        self.transform = transform
         self.verbose = verbose
         self.corrupt_fn = corrupt_fn
+        self.transform_fn = transform_fn
+        self.normalize_fn = normalize_fn
+        logger.info(f'Dataset has been created with {len(self.data_a)} samples')
 
         if preload:
             preload_fn = partial(self._bulk_preload, preload_size=preload_size)
@@ -91,10 +95,11 @@ class PairedDataset(Dataset):
             assert min(img.shape[:2]) >= preload_size, f'weird img shape: {img.shape}'
         return img
 
-    @staticmethod
-    def _preprocess(img):
-        img = np.transpose(img, (2, 0, 1))
-        return img
+    def _preprocess(self, img, res):
+        def transpose(x):
+            return np.transpose(x, (2, 0, 1))
+
+        return map(transpose, self.normalize_fn(img, res))
 
     def __len__(self):
         return len(self.data_a)
@@ -103,16 +108,19 @@ class PairedDataset(Dataset):
         a, b = self.data_a[idx], self.data_b[idx]
         if not self.preload:
             a, b = map(_read_img, (a, b))
+        a, b = self.transform_fn(a, b)
         if self.corrupt_fn is not None:
             a = self.corrupt_fn(a)
-        a, b = map(self._preprocess, self.transform(a, b))
+        a, b = self._preprocess(a, b)
         return {'a': a, 'b': b}
 
     @staticmethod
     def from_config(config):
+        config = deepcopy(config)
         files_a, files_b = map(lambda x: sorted(glob(config[x], recursive=True)), ('files_a', 'files_b'))
-        transform = get_transforms(size=config['size'], scope=config['scope'], crop=config['crop'])
-        # ToDo: make augmentations more customizible via config
+        transform_fn = aug.get_transforms(size=config['size'], scope=config['scope'], crop=config['crop'])
+        normalize_fn = aug.get_normalize()
+        corrupt_fn = aug.get_corrupt_function(config['corrupt'])
 
         hash_fn = hash_from_paths
         # ToDo: add more hash functions
@@ -124,19 +132,11 @@ class PairedDataset(Dataset):
 
         files_a, files_b = map(list, zip(*data))
 
-        corrupt_params = config.get('corrupt_fn')
-        if corrupt_params is not None:
-            corrupt_fn_name = corrupt_params.pop('name')
-            corrupt_fn = get_corrupt_function(corrupt_fn_name, **corrupt_params)
-            if corrupt_fn is not None:
-                logger.info(f'Using {corrupt_fn.func.__name__} for corruption')
-        else:
-            corrupt_fn = None
-
         return PairedDataset(files_a=files_a,
                              files_b=files_b,
                              preload=config['preload'],
                              preload_size=config['preload_size'],
                              corrupt_fn=corrupt_fn,
-                             transform=transform,
+                             normalize_fn=normalize_fn,
+                             transform_fn=transform_fn,
                              verbose=verbose)

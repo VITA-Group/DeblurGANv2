@@ -82,7 +82,7 @@ def get_corrupt_function(config: List[dict]):
     for aug_params in config:
         name = aug_params.pop('name')
         cls = _resolve_aug_fn(name)
-        prob = aug_params.pop('p') if 'p' in aug_params else .5
+        prob = aug_params.pop('prob') if 'prob' in aug_params else .5
         augs.append(cls(p=prob, **aug_params))
 
     augs = albu.OneOf(augs)

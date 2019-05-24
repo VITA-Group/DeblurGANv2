@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import logging
 from functools import partial
 
@@ -22,7 +20,7 @@ from schedulers import LinearDecay, WarmRestart
 cv2.setNumThreads(0)
 
 
-class Trainer(object):
+class Trainer:
     def __init__(self, config, train: DataLoader, val: DataLoader):
         self.config = config
         self.train_dataset = train
@@ -58,7 +56,9 @@ class Trainer(object):
         self.metric_counter.clear()
         for param_group in self.optimizer_G.param_groups:
             lr = param_group['lr']
-        tq = tqdm.tqdm(self.train_dataset)
+
+        epoch_size = config.get('train_batches_per_epoch') or len(self.train_dataset)
+        tq = tqdm.tqdm(self.train_dataset, total=epoch_size)
         tq.set_description('Epoch {}, lr {}'.format(epoch, lr))
         i = 0
         for data in tq:
@@ -72,17 +72,23 @@ class Trainer(object):
             loss_G.backward()
             self.optimizer_G.step()
             self.metric_counter.add_losses(loss_G.item(), loss_content.item(), loss_D)
-            curr_psnr, curr_ssim = self.model.get_acc(outputs, targets)
+            curr_psnr, curr_ssim, img_for_vis = self.model.get_images_and_metrics(inputs, outputs, targets)
             self.metric_counter.add_metrics(curr_psnr, curr_ssim)
             tq.set_postfix(loss=self.metric_counter.loss_message())
+            if not i:
+                self.metric_counter.add_image(img_for_vis, tag='train')
             i += 1
+            if i > epoch_size:
+                break
         tq.close()
         self.metric_counter.write_to_tensorboard(epoch)
 
     def _validate(self, epoch):
         self.metric_counter.clear()
-        tq = tqdm.tqdm(self.val_dataset)
+        epoch_size = config.get('val_batches_per_epoch') or len(self.val_dataset)
+        tq = tqdm.tqdm(self.val_dataset, total=epoch_size)
         tq.set_description('Validation')
+        i = 0
         for data in tq:
             inputs, targets = self.model.get_input(data)
             outputs = self.netG(inputs)
@@ -90,8 +96,13 @@ class Trainer(object):
             loss_adv = self.adv_trainer.lossG(outputs, targets)
             loss_G = loss_content + self.adv_lambda * loss_adv
             self.metric_counter.add_losses(loss_G.item(), loss_content.item())
-            curr_psnr, curr_ssim = self.model.get_acc(outputs, targets)
+            curr_psnr, curr_ssim, img_for_vis = self.model.get_images_and_metrics(inputs, outputs, targets)
             self.metric_counter.add_metrics(curr_psnr, curr_ssim)
+            if not i:
+                self.metric_counter.add_image(img_for_vis, tag='val')
+            i += 1
+            if i > epoch_size:
+                break
         tq.close()
         self.metric_counter.write_to_tensorboard(epoch, validation=True)
 

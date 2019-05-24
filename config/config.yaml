@@ -6,9 +6,8 @@ train:
   files_a: &FILES_A /datasets/my_dataset/**/*.jpg
   files_b: *FILES_A
   size: &SIZE 256
-  scope: strong
   crop: random
-  preload: &PRELOAD true
+  preload: &PRELOAD false
   preload_size: &PRELOAD_SIZE 0
   bounds: [0, .9]
   scope: geometric
@@ -44,7 +43,7 @@ warmup_num: 3
 model:
   g_name: fpn_inception
   blocks: 9
-  d_name: patch_gan
+  d_name: double_gan # may be no_gan, patch_gan, double_gan, multi_scale
   d_layers: 3
   content_loss: perceptual
   adv_lambda: 0.001
@@ -52,7 +51,10 @@ model:
   learn_residual: True
   norm_layer: instance
   dropout: True
-num_epochs: 100
+
+num_epochs: 200
+train_batches_per_epoch: 1000
+val_batches_per_epoch: 100
 batch_size: 1
 image_size: [256, 256]
 

@@ -61,7 +61,7 @@ class PairedDataset(Dataset):
 
         assert len(files_a) == len(files_b)
 
-        self.preload = False
+        self.preload = preload
         self.data_a = files_a
         self.data_b = files_b
         self.verbose = verbose

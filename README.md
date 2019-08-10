@@ -1,4 +1,4 @@
-# RestoreGAN
+# DeblurGANv2
 
 ## This repostory is under active development
 

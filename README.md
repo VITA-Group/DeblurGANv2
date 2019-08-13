@@ -24,16 +24,20 @@ The new FPN-embeded architecture is agnostic to the choice of feature extractor 
 
 ## Datasets
 
-The Restore Datasets (DVD+GOPRO+NFS) used in the paper can be downloaded via the links below:
+The Restore Dataset (DVD+GOPRO+NFS) used in the paper can be downloaded via the links below:
 - [DVD](https://drive.google.com/file/d/1bpj9pCcZR_6-AHb5aNnev5lILQbH8GMZ/view)
 - [GOPRO](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
 - [NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)
 
 ## How to train
 
+```python train.py```
+
+The training scirpt will load config under config/config.yaml
+
 ## Config structure 
 
-## How to make inference 
+## How to test
 
 ## Citation
 

@@ -25,8 +25,7 @@ jointly by noise, blur, compression, etc. The picture below shows the visual qua
 Inception-ResNet-v2 backbone over DeblurGAN. It is drawn from our new synthesized Restore Dataset 
 (refer to Datasets subsection below).-->
 
-<!---![alt-text-1](./doc_images/kohler_visual_1.png) ![alt-text-2](./doc_images/kohler_visual_2.png)-->
-
+![](./doc_images/kohler_visual.png)
 ![](./doc_images/restore_visual.png)
 
 ## DeblurGAN-v2 Architecture

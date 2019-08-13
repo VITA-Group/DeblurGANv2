@@ -2,6 +2,8 @@
 
 Code for this paper [DeblurGAN-v2: Deblurring (Orders-of-Magnitude) Faster and Better](https://arxiv.org/abs/1908.03826)
 
+Orest Kupyn, Tetiana Martyniuk, Junru Wu, Zhangyang Wang
+
 In ICCV 2019
 
 ## Overview
@@ -10,7 +12,7 @@ We present a new end-to-end generative adversarial network (GAN) for single imag
 
 We also study the effect of DeblurGAN-v2 on the task of general image restoration - enhancement of images degraded jointly by noise, blur, compression, etc. The picture below shows the visual quality superiority of DeblurGAN-v2 with Inception-ResNet-v2 backbone over DeblurGAN. It is drawn from our new synthesized Restore Dataset (refer to Datasets subsection below).
 
-![](./doc_images/Restore_Dataset.png)
+![](./doc_images/restore_visual.png)
 
 ## DeblurGAN-v2 Architecture
 
@@ -22,9 +24,9 @@ The new FPN-embeded architecture is agnostic to the choice of feature extractor 
 
 ## Datasets
 
-The datasets for training can be downloaded via the links below:
+The Restore Datasets (DVD+GOPRO+NFS) used in the paper can be downloaded via the links below:
 - [DVD](https://drive.google.com/file/d/1bpj9pCcZR_6-AHb5aNnev5lILQbH8GMZ/view)
-- [GoPro](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
+- [GOPRO](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
 - [NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)
 
 ## How to train

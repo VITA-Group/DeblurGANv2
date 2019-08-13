@@ -10,13 +10,13 @@ We present a new end-to-end generative adversarial network (GAN) for single imag
 
 We also study the effect of DeblurGAN-v2 on the task of general image restoration - enhancement of images degraded jointly by noise, blur, compression, etc. The picture below shows the visual quality superiority of DeblurGAN-v2 with Inception-ResNet-v2 backbone over DeblurGAN. It is drawn from our new synthesized Restore Dataset (refer to Datasets subsection below).
 
-![](./doc_images/Restore.png)
+![](./doc_images/Restore_Dataset.png)
 
 ## DeblurGAN-v2 Architecture
 
-![](./doc_images/Arch.png)
+![](./doc_images/pipeline.jpg)
 
-Our architecture consists of an FPN backbone from which we take five final feature maps of different scales as the output. Those features are later up-sampled to the same {\frac{1}{4}} input size and concatenated into one tensor which contains the semantic information on different levels. We additionally add two upsampling and convolutional layers at the end of the network to restore the original image size  and reduce artifacts. We also introduce a direct skip connection from the input to the output, so that the learning focuses on the residue. The input images are normalized to \[-1, 1\]. We also use a \{tanh} activation layer to keep the output in the same range.
+Our architecture consists of an FPN backbone from which we take five final feature maps of different scales as the output. Those features are later up-sampled to the same 1/4 input size and concatenated into one tensor which contains the semantic information on different levels. We additionally add two upsampling and convolutional layers at the end of the network to restore the original image size  and reduce artifacts. We also introduce a direct skip connection from the input to the output, so that the learning focuses on the residue. The input images are normalized to \[-1, 1\]. We also use a **tanh** activation layer to keep the output in the same range.
 
 The new FPN-embeded architecture is agnostic to the choice of feature extractor backbones. With this plug-and-play property, we are entitled with the flexibility to navigate through the spectrum of accuracy and efficiency. By default, we choose ImageNet-pretrained backbones to convey more semantic-related features. 
 

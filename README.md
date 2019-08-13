@@ -22,7 +22,7 @@ The new FPN-embeded architecture is agnostic to the choice of feature extractor 
 
 ## Datasets
 
-The Restore Dataset can be downloaded via the links below:
+The datasets for training can be downloaded via the links below:
 - [DVD](https://drive.google.com/file/d/1bpj9pCcZR_6-AHb5aNnev5lILQbH8GMZ/view)
 - [GoPro](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
 - [NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)

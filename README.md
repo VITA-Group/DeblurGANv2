@@ -30,7 +30,7 @@ Inception-ResNet-v2 backbone over DeblurGAN. It is drawn from our new synthesize
 
 ## DeblurGAN-v2 Architecture
 
-![](./doc_images/pipeline.jpg)njn 
+![](./doc_images/pipeline.jpg)
 
 <!---Our architecture consists of an FPN backbone from which we take five final feature maps of different scales as the 
 output. Those features are later up-sampled to the same 1/4 input size and concatenated into one tensor which contains 

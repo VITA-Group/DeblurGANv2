@@ -27,10 +27,11 @@ Inception-ResNet-v2 backbone over DeblurGAN. It is drawn from our new synthesize
 
 ![](./doc_images/kohler_visual.png)
 ![](./doc_images/restore_visual.png)
+![](./doc_images/gopro_table.png)
 
 ## DeblurGAN-v2 Architecture
 
-![](./doc_images/pipeline.jpg)njn 
+![](./doc_images/pipeline.jpg)
 
 <!---Our architecture consists of an FPN backbone from which we take five final feature maps of different scales as the 
 output. Those features are later up-sampled to the same 1/4 input size and concatenated into one tensor which contains 
@@ -45,10 +46,10 @@ By default, we choose ImageNet-pretrained backbones to convey more semantic-rela
 
 ## Datasets
 
-The Restore Dataset (DVD+GOPRO+NFS) used in the paper can be downloaded via the links below:
-- [DVD](https://drive.google.com/file/d/1bpj9pCcZR_6-AHb5aNnev5lILQbH8GMZ/view)
-- [GOPRO](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
-- [NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)
+The Restore Dataset (DVD + GOPRO + NFS) used in the paper can be downloaded via the links below:
+- [Restore Dataset: DVD](https://drive.google.com/file/d/1bpj9pCcZR_6-AHb5aNnev5lILQbH8GMZ/view)
+- [Restore Dataset: GOPRO](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
+- [Restore Dataset: NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)
 
 ## How to train
 

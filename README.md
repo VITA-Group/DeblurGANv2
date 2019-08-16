@@ -28,6 +28,9 @@ Inception-ResNet-v2 backbone over DeblurGAN. It is drawn from our new synthesize
 ![](./doc_images/kohler_visual.png)
 ![](./doc_images/restore_visual.png)
 ![](./doc_images/gopro_table.png)
+![](./doc_images/lai_table.png)
+<!---![](./doc_images/dvd_table.png)-->
+<!---![](./doc_images/kohler_table.png)-->
 
 ## DeblurGAN-v2 Architecture
 
@@ -51,15 +54,21 @@ The Restore Dataset (DVD + GOPRO + NFS) used in the paper can be downloaded via 
 - [Restore Dataset: GOPRO](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
 - [Restore Dataset: NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)
 
-## How to train
+## Training
+
+#### Command:
 
 ```python train.py```
 
-The training scirpt will load config under config/config.yaml
+training scirpt will load config under config/config.yaml
 
-## Config structure 
+#### Tensorboard visualization
 
-## How to test
+![](./doc_images/tensorboard2.png)
+
+#### Yaml config structure
+
+## Testing
 
 ## Citation
 

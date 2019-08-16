@@ -49,10 +49,10 @@ By default, we choose ImageNet-pretrained backbones to convey more semantic-rela
 
 ## Datasets
 
-The Restore Dataset (DVD + GOPRO + NFS) used in the paper can be downloaded via the links below:
-- [Restore Dataset: DVD](https://drive.google.com/file/d/1bpj9pCcZR_6-AHb5aNnev5lILQbH8GMZ/view)
-- [Restore Dataset: GOPRO](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
-- [Restore Dataset: NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)
+The datasets for training can be downloaded via the links below:
+- [DVD](https://drive.google.com/file/d/1bpj9pCcZR_6-AHb5aNnev5lILQbH8GMZ/view)
+- [GoPro](https://drive.google.com/file/d/1KStHiZn5TNm2mo3OLZLjnRvd0vVFCI0W/view)
+- [NFS](https://drive.google.com/file/d/1Ut7qbQOrsTZCUJA_mJLptRMipD8sJzjy/view)
 
 ## Training
 
@@ -60,19 +60,14 @@ The Restore Dataset (DVD + GOPRO + NFS) used in the paper can be downloaded via 
 
 ```python train.py```
 
-training scirpt will load config under config/config.yaml
+training script will load config under config/config.yaml
 
 #### Tensorboard visualization
 
 ![](./doc_images/tensorboard2.png)
 
-#### Yaml config structure
 
-## Testing
-
-#### Command
-
-#### Pre-trained models
+## Pre-trained models
 
 <table align="center">
     <tr>

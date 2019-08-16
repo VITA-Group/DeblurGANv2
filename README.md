@@ -79,25 +79,25 @@ training script will load config under config/config.yaml
         <th>Link</th>
     </tr>
     <tr>
-        <td rowspan="3">Restore Dataset</td>
+        <td rowspan="3">GoPro Test Dataset</td>
         <td>Inception-ResNet-v2</td>
         <td>double_gan</td>
         <td>ragan-ls</td>
-        <td>0.0/ 0.0</td>
+        <td>29.55/ 0.934</td>
         <td><a href=""></a></td>
     </tr>
     <tr>
         <td>ModileNet</td>
         <td>double_gan</td>
         <td>ragan-ls</td>
-        <td>0.0/ 0.0</td>
+        <td>28.17/ 0.925</td>
         <td><a href=""></a></td>
     </tr>
     <tr>
         <td>ModileNet-DSC</td>
         <td>double_gan</td>
         <td>ragan-ls</td>
-        <td>0.0/ 0.0</td>
+        <td>28.03/ 0.922</td>
         <td><a href=""></a></td>
     </tr>
 </table>

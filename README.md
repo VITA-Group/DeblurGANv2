@@ -56,7 +56,7 @@ The Restore Dataset (DVD + GOPRO + NFS) used in the paper can be downloaded via 
 
 ## Training
 
-#### Command:
+#### Command
 
 ```python train.py```
 
@@ -69,6 +69,43 @@ training scirpt will load config under config/config.yaml
 #### Yaml config structure
 
 ## Testing
+
+#### Command
+
+#### Pre-trained models
+
+<table align="center">
+    <tr>
+        <th>Dataset</th>
+        <th>G Model</th>
+        <th>D Model</th>
+        <th>Loss Type</th>
+        <th>PSNR/ SSIM</th>
+        <th>Link</th>
+    </tr>
+    <tr>
+        <td rowspan="3">Restore Dataset</td>
+        <td>Inception-ResNet-v2</td>
+        <td>double_gan</td>
+        <td>ragan-ls</td>
+        <td>0.0/ 0.0</td>
+        <td><a href=""></a></td>
+    </tr>
+    <tr>
+        <td>ModileNet</td>
+        <td>double_gan</td>
+        <td>ragan-ls</td>
+        <td>0.0/ 0.0</td>
+        <td><a href=""></a></td>
+    </tr>
+    <tr>
+        <td>ModileNet-DSC</td>
+        <td>double_gan</td>
+        <td>ragan-ls</td>
+        <td>0.0/ 0.0</td>
+        <td><a href=""></a></td>
+    </tr>
+</table>
 
 ## Citation
 

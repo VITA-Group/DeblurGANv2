@@ -84,14 +84,14 @@ training script will load config under config/config.yaml
         <td>double_gan</td>
         <td>ragan-ls</td>
         <td>29.55/ 0.934</td>
-        <td><a href=""></a></td>
+        <td><a href="">https://drive.google.com/open?id=1hv238vS9VeK8C8QwrQ2MnJc3ChgHyaGy</a></td>
     </tr>
     <tr>
         <td>MobileNet</td>
         <td>double_gan</td>
         <td>ragan-ls</td>
         <td>28.17/ 0.925</td>
-        <td><a href=""></a></td>
+        <td><a href="">https://drive.google.com/open?id=1JhnT4BBeKBBSLqTo6UsJ13HeBXevarrU</a></td>
     </tr>
     <tr>
         <td>MobileNet-DSC</td>

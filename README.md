@@ -66,6 +66,13 @@ training script will load config under config/config.yaml
 
 ![](./doc_images/tensorboard2.png)
 
+## Testing
+
+To test on a single image,
+
+```python predict.py IMAGE_NAME.jpg```
+
+By default, the name of the pretrained model used by Predictor is 'best_fpn.h5'. One can change it in the code ('weights_path' argument). It assumes that the fpn_inception backbone is used. If you want to try it with different backbone pretrain, please specify it also under ['model']['g_name'] in config/config.yaml.
 
 ## Pre-trained models
 

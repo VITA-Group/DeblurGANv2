@@ -17,13 +17,13 @@ class FPNHead(nn.Module):
 
 class FPNMobileNet(nn.Module):
 
-    def __init__(self, norm_layer, output_ch=3, num_filters=128, num_filters_fpn=128, pretrained=True):
+    def __init__(self, norm_layer, output_ch=3, num_filters=64, num_filters_fpn=128, pretrained=True):
         super().__init__()
 
         # Feature Pyramid Network (FPN) with four feature maps of resolutions
         # 1/4, 1/8, 1/16, 1/32 and `num_filters` filters for all feature maps.
 
-        self.fpn = FPN(num_filters=num_filters_fpn, pretrained=pretrained)
+        self.fpn = FPN(num_filters=num_filters_fpn, norm_layer = norm_layer, pretrained=pretrained)
 
         # The segmentation heads on top of the FPN
 
@@ -71,7 +71,7 @@ class FPNMobileNet(nn.Module):
 
 class FPN(nn.Module):
 
-    def __init__(self, num_filters=128, pretrained=True):
+    def __init__(self, norm_layer, num_filters=128, pretrained=True):
         """Creates an `FPN` instance for feature extraction.
         Args:
           num_filters: the number of filters in each output pyramid level

@@ -67,7 +67,7 @@ class Trainer:
             loss_D = self._update_d(outputs, targets)
             self.optimizer_G.zero_grad()
             loss_content = self.criterionG(outputs, targets)
-            loss_adv = self.adv_trainer.lossG(outputs, targets)
+            loss_adv = self.adv_trainer.loss_g(outputs, targets)
             loss_G = loss_content + self.adv_lambda * loss_adv
             loss_G.backward()
             self.optimizer_G.step()
@@ -93,7 +93,7 @@ class Trainer:
             inputs, targets = self.model.get_input(data)
             outputs = self.netG(inputs)
             loss_content = self.criterionG(outputs, targets)
-            loss_adv = self.adv_trainer.lossG(outputs, targets)
+            loss_adv = self.adv_trainer.loss_g(outputs, targets)
             loss_G = loss_content + self.adv_lambda * loss_adv
             self.metric_counter.add_losses(loss_G.item(), loss_content.item())
             curr_psnr, curr_ssim, img_for_vis = self.model.get_images_and_metrics(inputs, outputs, targets)
@@ -110,7 +110,7 @@ class Trainer:
         if self.config['model']['d_name'] == 'no_gan':
             return 0
         self.optimizer_D.zero_grad()
-        loss_D = self.adv_lambda * self.adv_trainer.lossD(outputs, targets)
+        loss_D = self.adv_lambda * self.adv_trainer.loss_d(outputs, targets)
         loss_D.backward(retain_graph=True)
         self.optimizer_D.step()
         return loss_D.item()

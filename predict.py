@@ -72,8 +72,8 @@ class Predictor:
 def main(img_pattern: str,
          mask_pattern: Optional[str] = None,
          weights_path='best_fpn.h5',
-         out_dir='submit/'
-         ):
+         out_dir='submit/',
+         side_by_side: bool = False):
     def sorted_glob(pattern):
         return sorted(glob(pattern))
 
@@ -87,8 +87,12 @@ def main(img_pattern: str,
     for name, pair in tqdm(zip(names, pairs), total=len(names)):
         f_img, f_mask = pair
         img, mask = map(cv2.imread, (f_img, f_mask))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         pred = predictor(img, mask)
+        if side_by_side:
+            pred = np.hstack((img, pred))
+        pred = cv2.cvtColor(pred, cv2.COLOR_RGB2BGR)
         cv2.imwrite(os.path.join(out_dir, name),
                     pred)
 

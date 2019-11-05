@@ -91,7 +91,7 @@ By default, the name of the pretrained model used by Predictor is 'best_fpn.h5'.
         <td>double_gan</td>
         <td>ragan-ls</td>
         <td>29.55/ 0.934</td>
-        <td><a href="">https://drive.google.com/open?id=1hv238vS9VeK8C8QwrQ2MnJc3ChgHyaGy</a></td>
+        <td><a href="">https://drive.google.com/open?id=1UXcsRVW-6KF23_TNzxw-xC0SzaMfXOaR</a></td>
     </tr>
     <tr>
         <td>MobileNet</td>
@@ -108,6 +108,10 @@ By default, the name of the pretrained model used by Predictor is 'best_fpn.h5'.
         <td><a href=""></a></td>
     </tr>
 </table>
+
+## Parent Repository
+
+The code was taken from <a href="">https://github.com/KupynOrest/RestoreGAN</a> . This repository contains flexible pipelines for different Image Restoration tasks.
 
 ## Citation
 

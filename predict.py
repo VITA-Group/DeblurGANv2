@@ -68,12 +68,32 @@ class Predictor:
             pred = self.model(*inputs)
         return self._postprocess(pred)[:h, :w, :]
 
+def process_video(pairs, predictor, output_dir):
+    for video_filepath, mask in tqdm(pairs):
+        video_filename = os.path.basename(video_filepath)
+        output_filepath = os.path.join(output_dir, os.path.splitext(video_filename)[0]+'_deblur.mp4')
+        video_in = cv2.VideoCapture(video_filepath)
+        fps = video_in.get(cv2.CAP_PROP_FPS)
+        width = int(video_in.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(video_in.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        total_frame_num = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
+        video_out = cv2.VideoWriter(output_filepath, cv2.VideoWriter_fourcc(*'MP4V'), fps, (width, height))
+        tqdm.write(f'process {video_filepath} to {output_filepath}, {fps}fps, resolution: {width}x{height}')
+        for frame_num in tqdm(range(total_frame_num), desc=video_filename):
+            res, img = video_in.read()
+            if not res:
+                break
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            pred = predictor(img, mask)
+            pred = cv2.cvtColor(pred, cv2.COLOR_RGB2BGR)
+            video_out.write(pred)
 
 def main(img_pattern: str,
          mask_pattern: Optional[str] = None,
          weights_path='best_fpn.h5',
          out_dir='submit/',
-         side_by_side: bool = False):
+         side_by_side: bool = False,
+         video: bool = False):
     def sorted_glob(pattern):
         return sorted(glob(pattern))
 
@@ -84,17 +104,20 @@ def main(img_pattern: str,
     predictor = Predictor(weights_path=weights_path)
 
     os.makedirs(out_dir, exist_ok=True)
-    for name, pair in tqdm(zip(names, pairs), total=len(names)):
-        f_img, f_mask = pair
-        img, mask = map(cv2.imread, (f_img, f_mask))
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    if not video:
+        for name, pair in tqdm(zip(names, pairs), total=len(names)):
+            f_img, f_mask = pair
+            img, mask = map(cv2.imread, (f_img, f_mask))
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        pred = predictor(img, mask)
-        if side_by_side:
-            pred = np.hstack((img, pred))
-        pred = cv2.cvtColor(pred, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(out_dir, name),
-                    pred)
+            pred = predictor(img, mask)
+            if side_by_side:
+                pred = np.hstack((img, pred))
+            pred = cv2.cvtColor(pred, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(os.path.join(out_dir, name),
+                        pred)
+    else:
+        process_video(pairs, predictor, out_dir)
 
 
 if __name__ == '__main__':

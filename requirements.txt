@@ -1,5 +1,6 @@
 torch==1.0.1
 torchvision
+torchsummary
 pretrainedmodels
 numpy
 opencv-python-headless

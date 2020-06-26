@@ -91,14 +91,14 @@ By default, the name of the pretrained model used by Predictor is 'best_fpn.h5'.
         <td>double_gan</td>
         <td>ragan-ls</td>
         <td>29.55/ 0.934</td>
-        <td><a href="">https://drive.google.com/open?id=1UXcsRVW-6KF23_TNzxw-xC0SzaMfXOaR</a></td>
+        <td><a href="">https://drive.google.com/file/d/1UXcsRVW-6KF23_TNzxw-xC0SzaMfXOaR/view</a></td>
     </tr>
     <tr>
         <td>MobileNet</td>
         <td>double_gan</td>
         <td>ragan-ls</td>
         <td>28.17/ 0.925</td>
-        <td><a href="">https://drive.google.com/open?id=1JhnT4BBeKBBSLqTo6UsJ13HeBXevarrU</a></td>
+        <td><a href="">https://drive.google.com/file/d/1JhnT4BBeKBBSLqTo6UsJ13HeBXevarrU/view</a></td>
     </tr>
     <tr>
         <td>MobileNet-DSC</td>

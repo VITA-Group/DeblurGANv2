@@ -93,9 +93,10 @@ class Trainer:
         i = 0
         for data in tq:
             inputs, targets = self.model.get_input(data)
-            outputs = self.netG(inputs)
-            loss_content = self.criterionG(outputs, targets)
-            loss_adv = self.adv_trainer.loss_g(outputs, targets)
+            with torch.no_grad():
+                outputs = self.netG(inputs)
+                loss_content = self.criterionG(outputs, targets)
+                loss_adv = self.adv_trainer.loss_g(outputs, targets)
             loss_G = loss_content + self.adv_lambda * loss_adv
             self.metric_counter.add_losses(loss_G.item(), loss_content.item())
             curr_psnr, curr_ssim, img_for_vis = self.model.get_images_and_metrics(inputs, outputs, targets)

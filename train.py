@@ -59,7 +59,7 @@ class Trainer:
         for param_group in self.optimizer_G.param_groups:
             lr = param_group['lr']
 
-        epoch_size = config.get('train_batches_per_epoch') or len(self.train_dataset)
+        epoch_size = self.config.get('train_batches_per_epoch') or len(self.train_dataset)
         tq = tqdm.tqdm(self.train_dataset, total=epoch_size)
         tq.set_description('Epoch {}, lr {}'.format(epoch, lr))
         i = 0
@@ -87,7 +87,7 @@ class Trainer:
 
     def _validate(self, epoch):
         self.metric_counter.clear()
-        epoch_size = config.get('val_batches_per_epoch') or len(self.val_dataset)
+        epoch_size = self.config.get('val_batches_per_epoch') or len(self.val_dataset)
         tq = tqdm.tqdm(self.val_dataset, total=epoch_size)
         tq.set_description('Validation')
         i = 0

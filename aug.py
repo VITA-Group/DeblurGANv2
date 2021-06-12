@@ -4,23 +4,7 @@ import albumentations as albu
 
 
 def get_transforms(size: int, scope: str = 'geometric', crop='random'):
-    augs = {'strong': albu.Compose([albu.HorizontalFlip(),
-                                    albu.ShiftScaleRotate(shift_limit=0.0, scale_limit=0.2, rotate_limit=20, p=.4),
-                                    albu.ElasticTransform(),
-                                    albu.OpticalDistortion(),
-                                    albu.OneOf([
-                                        albu.CLAHE(clip_limit=2),
-                                        albu.IAASharpen(),
-                                        albu.IAAEmboss(),
-                                        albu.RandomBrightnessContrast(),
-                                        albu.RandomGamma()
-                                    ], p=0.5),
-                                    albu.OneOf([
-                                        albu.RGBShift(),
-                                        albu.HueSaturationValue(),
-                                    ], p=0.5),
-                                    ]),
-            'weak': albu.Compose([albu.HorizontalFlip(),
+    augs = {'weak': albu.Compose([albu.HorizontalFlip(),
                                   ]),
             'geometric': albu.OneOf([albu.HorizontalFlip(always_apply=True),
                                      albu.ShiftScaleRotate(always_apply=True),
@@ -35,7 +19,7 @@ def get_transforms(size: int, scope: str = 'geometric', crop='random'):
                'center': albu.CenterCrop(size, size, always_apply=True)}[crop]
     pad = albu.PadIfNeeded(size, size)
 
-    pipeline = albu.Compose([aug_fn, crop_fn, pad], additional_targets={'target': 'image'})
+    pipeline = albu.Compose([aug_fn, pad, crop_fn,], additional_targets={'target': 'image'})
 
     def process(a, b):
         r = pipeline(image=a, target=b)
@@ -68,10 +52,10 @@ def _resolve_aug_fn(name):
         'brightness_contrast': albu.RandomBrightnessContrast,
         'gamma': albu.RandomGamma,
         'sun_flare': albu.RandomSunFlare,
-        'sharpen': albu.IAASharpen,
-        'jpeg': albu.JpegCompression,
+        'sharpen': albu.Sharpen,
+        'jpeg': albu.ImageCompression,
         'gray': albu.ToGray,
-        # ToDo: pixelize
+        'pixelize': albu.Downscale,
         # ToDo: partial gray
     }
     return d[name]

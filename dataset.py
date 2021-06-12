@@ -44,7 +44,7 @@ def _read_img(x: str):
     img = cv2.imread(x)
     if img is None:
         logger.warning(f'Can not read image {x} with OpenCV, switching to scikit-image')
-        img = imread(x)
+        img = imread(x)[:, :, ::-1]
     return img
 
 

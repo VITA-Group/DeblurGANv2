@@ -64,6 +64,10 @@ class FPNDense(nn.Module):
         final = self.final(smoothed)
         return torch.tanh(final)
 
+    def unfreeze(self):
+        for param in self.fpn.parameters():
+            param.requires_grad = True
+
 
 class FPN(nn.Module):
 

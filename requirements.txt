@@ -1,12 +1,12 @@
-torch==1.0.1
+torch>=1.0.1
 torchvision
 torchsummary
 pretrainedmodels
 numpy
 opencv-python-headless
 joblib
-albumentations
-scikit-image
+albumentations>=1.0.0
+scikit-image==0.18.1
 tqdm
 glog
 tensorboardx

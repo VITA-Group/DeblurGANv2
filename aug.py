@@ -19,7 +19,7 @@ def get_transforms(size: int, scope: str = 'geometric', crop='random'):
                'center': albu.CenterCrop(size, size, always_apply=True)}[crop]
     pad = albu.PadIfNeeded(size, size)
 
-    pipeline = albu.Compose([aug_fn, pad, crop_fn,], additional_targets={'target': 'image'})
+    pipeline = albu.Compose([aug_fn, pad, crop_fn], additional_targets={'target': 'image'})
 
     def process(a, b):
         r = pipeline(image=a, target=b)

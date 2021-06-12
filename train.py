@@ -17,6 +17,7 @@ from models.losses import get_loss
 from models.models import get_model
 from models.networks import get_nets
 from schedulers import LinearDecay, WarmRestart
+from fire import Fire
 
 cv2.setNumThreads(0)
 
@@ -168,12 +169,14 @@ class Trainer:
         self.scheduler_D = self._get_scheduler(self.optimizer_D)
 
 
-if __name__ == '__main__':
-    with open('config/config.yaml', 'r') as f:
+def main(config_path='config/config.yaml'):
+    with open(config_path, 'r') as f:
         config = yaml.load(f)
 
     batch_size = config.pop('batch_size')
-    get_dataloader = partial(DataLoader, batch_size=batch_size, num_workers=0 if os.environ['DEBUG'] else cpu_count(),
+    get_dataloader = partial(DataLoader,
+                             batch_size=batch_size,
+                             num_workers=0 if os.environ.get('DEBUG') else cpu_count(),
                              shuffle=True, drop_last=True)
 
     datasets = map(config.pop, ('train', 'val'))
@@ -181,3 +184,7 @@ if __name__ == '__main__':
     train, val = map(get_dataloader, datasets)
     trainer = Trainer(config, train=train, val=val)
     trainer.train()
+
+
+if __name__ == '__main__':
+    Fire(main)

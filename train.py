@@ -171,7 +171,7 @@ class Trainer:
 
 def main(config_path='config/config.yaml'):
     with open(config_path, 'r') as f:
-        config = yaml.load(f)
+        config = yaml.load(f, Loader=yaml.SafeLoader)
 
     batch_size = config.pop('batch_size')
     get_dataloader = partial(DataLoader,

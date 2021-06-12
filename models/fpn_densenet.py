@@ -62,7 +62,7 @@ class FPNDense(nn.Module):
         smoothed = nn.functional.upsample(smoothed, scale_factor=2, mode="nearest")
 
         final = self.final(smoothed)
-        return nn.tanh(final)
+        return torch.tanh(final)
 
 
 class FPN(nn.Module):

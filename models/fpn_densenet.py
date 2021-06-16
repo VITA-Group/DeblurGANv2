@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchvision.models import resnet50, densenet121, densenet201
+from torchvision.models import densenet121
 
 
 class FPNSegHead(nn.Module):
@@ -62,8 +62,11 @@ class FPNDense(nn.Module):
         smoothed = nn.functional.upsample(smoothed, scale_factor=2, mode="nearest")
 
         final = self.final(smoothed)
+        return torch.tanh(final)
 
-        nn.Tanh(final)
+    def unfreeze(self):
+        for param in self.fpn.parameters():
+            param.requires_grad = True
 
 
 class FPN(nn.Module):

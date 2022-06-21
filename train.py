@@ -171,13 +171,16 @@ class Trainer:
 
 
 def main(config_path='config/config.yaml'):
-    with open(config_path, 'r') as f:
+    with open(config_path, 'r',encoding='utf-8') as f:
         config = yaml.load(f, Loader=yaml.SafeLoader)
 
     batch_size = config.pop('batch_size')
+    # get_dataloader = partial(DataLoader,
+    #                          batch_size=batch_size,
+    #                          num_workers=0 if os.environ.get('DEBUG') else cpu_count(),
+    #                          shuffle=True, drop_last=True)
     get_dataloader = partial(DataLoader,
                              batch_size=batch_size,
-                             num_workers=0 if os.environ.get('DEBUG') else cpu_count(),
                              shuffle=True, drop_last=True)
 
     datasets = map(config.pop, ('train', 'val'))

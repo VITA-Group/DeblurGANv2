@@ -3,8 +3,12 @@ project: deblur_gan
 experiment_desc: fpn
 
 train:
-  files_a: &FILES_A /datasets/my_dataset/**/*.jpg
+#  files_a: &FILES_A /datasets/my_dataset/**/*.jpg
+  #可以使用绝对路径
+  files_a: &FILES_A D:/deblur/goprol_large/**/*.png
   files_b: *FILES_A
+#  files_a: &FILES_A ./dataset1/blur/*.png
+#  files_b: &FILES_B ./dataset1/sharp/*.png
   size: &SIZE 256
   crop: random
   preload: &PRELOAD false
@@ -30,6 +34,8 @@ train:
 val:
   files_a: *FILES_A
   files_b: *FILES_A
+#  files_a: &FILES_A
+#  files_b: &FILES_B
   size: *SIZE
   scope: geometric
   crop: center
@@ -52,7 +58,7 @@ model:
   norm_layer: instance
   dropout: True
 
-num_epochs: 200
+num_epochs: 10
 train_batches_per_epoch: 1000
 val_batches_per_epoch: 100
 batch_size: 1
@@ -60,7 +66,7 @@ image_size: [256, 256]
 
 optimizer:
   name: adam
-  lr: 0.0001
+  lr: 0.01
 scheduler:
   name: linear
   start_epoch: 50

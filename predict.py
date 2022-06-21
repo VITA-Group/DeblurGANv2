@@ -15,7 +15,7 @@ from models.networks import get_generator
 
 class Predictor:
     def __init__(self, weights_path: str, model_name: str = ''):
-        with open('config/config.yaml') as cfg:
+        with open('config/config.yaml',encoding='utf-8') as cfg:
             config = yaml.load(cfg, Loader=yaml.FullLoader)
         model = get_generator(model_name or config['model'])
         model.load_state_dict(torch.load(weights_path)['model'])
@@ -122,4 +122,4 @@ def main(img_pattern: str,
 
 if __name__ == '__main__':
   #  Fire(main)
-    main('submit/t6.jpg')
+    main('test_img/000027.png')

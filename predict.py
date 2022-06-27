@@ -119,7 +119,24 @@ def main(img_pattern: str,
     else:
         process_video(pairs, predictor, out_dir)
 
+# def getfiles():
+#     filenames = os.listdir(r'.\dataset1\blur')
+#     print(filenames)
+def get_files():
+    list=[]
+    for filepath,dirnames,filenames in os.walk(r'.\dataset1\blur'):
+        for filename in filenames:
+            list.append(os.path.join(filepath,filename))
+    return list
+
+
+
+
 
 if __name__ == '__main__':
   #  Fire(main)
-    main('test_img/000027.png')
+#增加批量处理图片：
+    img_path=get_files()
+    for i in img_path:
+        main(i)
+    # main('test_img/tt.mp4')

@@ -1,4 +1,4 @@
-Copyright (c) 2017, Jun-Yan Zhu and Taesung Park
+Copyright (c) 2019, Orest Kupyn, Tetiana Martyniuk, Junru Wu and Zhangyang Wang
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -23,11 +23,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
---------------------------- LICENSE FOR pix2pix --------------------------------
+--------------------------- LICENSE FOR DeblurGANv2 --------------------------------
 BSD License
 
-For pix2pix software
-Copyright (c) 2016, Phillip Isola and Jun-Yan Zhu
+For DeblurGANv2 software
+Copyright (c) 2019, Orest Kupyn, Tetiana Martyniuk, Junru Wu and Zhangyang Wang
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

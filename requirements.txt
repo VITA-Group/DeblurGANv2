@@ -1,14 +1,18 @@
-torch>=1.0.1
-torchvision
-torchsummary
-pretrainedmodels
-numpy
-opencv-python-headless
-joblib
-albumentations>=1.0.0
-scikit-image==0.18.1
-tqdm
-glog
-tensorboardx
-fire
-# this file is not ready yet
+# As the original requirements.txt file has not declared the concrete requirements, I shall provide a possible access to the DeblurGANv2.
+# The torch and its attachments are expected to be chosen by youself according to your GPU type and CUDA version from Pytorch official website.
+
+torch==2.8.0+cu128    # For example
+torchvision==0.23.0+cu128     # For example
+torchsummary==1.5.1
+pretrainedmodels==0.7.4
+numpy==1.26.4
+opencv-python==4.12.0.88
+opencv-python-headless==4.9.0.80
+joblib==1.5.3
+albucore==0.0.4
+albumentations==0.5.2
+scikit-image==0.26.0
+tqdm==4.67.1
+glog==0.3.1
+tensorboardx==2.6.4
+fire==0.7.1
